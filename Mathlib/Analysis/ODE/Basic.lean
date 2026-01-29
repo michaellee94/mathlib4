@@ -23,10 +23,6 @@ Let `v : E → E` be a vector field on `E`, and let `γ : ℝ → E`.
 * `IsIntegralCurveAt γ v t₀`: `γ t` is tangent to `v (γ t)` for all `t` in some open interval
   around `t₀`. That is, `γ` is a local integral curve of `v`.
 
-For `IsIntegralCurveOn γ v s` and `IsIntegralCurveAt γ v t₀`, even though `γ` is defined for all
-time, its value outside of the set `s` or a small interval around `t₀` is irrelevant and considered
-junk.
-
 ## TODO
 
 * Implement `IsIntegralCurveWithinAt`.
@@ -71,21 +67,16 @@ lemma isIntegralCurveOn_univ :
 
 lemma isIntegralCurveAt_iff_exists_mem_nhds :
     IsIntegralCurveAt γ v t₀ ↔ ∃ s ∈ 𝓝 t₀, IsIntegralCurveOn γ v s := by
-  constructor
-  · intro h
-    rw [IsIntegralCurveAt, Filter.eventually_iff_exists_mem] at h
-    obtain ⟨s, hs, h⟩ := h
-    exact ⟨s, hs, fun t ht ↦ (h t ht).hasDerivWithinAt⟩
-  · intro h
-    rw [IsIntegralCurveAt, Filter.eventually_iff_exists_mem]
-    obtain ⟨s, hs, h⟩ := h
-    rw [mem_nhds_iff] at hs
-    obtain ⟨s', h1, h2, h3⟩ := hs
-    refine ⟨s', h2.mem_nhds h3, ?_⟩
-    intro t ht
-    apply (h t (h1 ht)).hasDerivAt
-    rw [mem_nhds_iff]
-    exact ⟨s', h1, h2, ht⟩
+  rw [IsIntegralCurveAt, Filter.eventually_iff_exists_mem]
+  refine ⟨fun ⟨s, hs, h⟩ ↦ ⟨s, hs, fun t ht ↦ (h t ht).hasDerivWithinAt⟩, ?_⟩
+  intro ⟨s, hs, h⟩
+  rw [mem_nhds_iff] at hs
+  obtain ⟨s', h₁, h₂, h₃⟩ := hs
+  refine ⟨s', h₂.mem_nhds h₃, ?_⟩
+  intro t ht
+  apply (h t (h₁ ht)).hasDerivAt
+  rw [mem_nhds_iff]
+  exact ⟨s', h₁, h₂, ht⟩
 
 /-- `γ` is an integral curve for `v` at `t₀` iff `γ` is an integral curve on some interval
 containing `t₀`. -/
@@ -107,7 +98,7 @@ lemma isIntegralCurve_iff_isIntegralCurveAt :
     exact h t (mem_of_mem_nhds hs) |>.hasDerivAt hs⟩
 
 lemma IsIntegralCurveOn.mono (h : IsIntegralCurveOn γ v s) (hs : s' ⊆ s) :
-    IsIntegralCurveOn γ v s' := fun t ht ↦ (h t (hs ht)).mono hs
+    IsIntegralCurveOn γ v s' := fun t ht ↦ h t (hs ht) |>.mono hs
 
 lemma IsIntegralCurveAt.hasDerivAt (h : IsIntegralCurveAt γ v t₀) :
     HasDerivAt γ (v (γ t₀)) t₀ :=
@@ -121,9 +112,8 @@ lemma IsIntegralCurveOn.isIntegralCurveAt (h : IsIntegralCurveOn γ v s) (hs : s
 lemma IsIntegralCurveAt.isIntegralCurveOn (h : ∀ t ∈ s, IsIntegralCurveAt γ v t) :
     IsIntegralCurveOn γ v s := by
   intros t ht
-  apply HasDerivAt.hasDerivWithinAt
   obtain ⟨s', hs', h⟩ := Filter.eventually_iff_exists_mem.mp (h t ht)
-  exact h _ (mem_of_mem_nhds hs')
+  exact h _ (mem_of_mem_nhds hs') |>.hasDerivWithinAt
 
 lemma isIntegralCurveOn_iff_isIntegralCurveAt (hs : IsOpen s) :
     IsIntegralCurveOn γ v s ↔ ∀ t ∈ s, IsIntegralCurveAt γ v t :=
@@ -133,7 +123,7 @@ lemma IsIntegralCurveOn.continuousWithinAt (hγ : IsIntegralCurveOn γ v s) (ht 
     ContinuousWithinAt γ s t₀ := (hγ t₀ ht).continuousWithinAt
 
 lemma IsIntegralCurveOn.continuousOn (hγ : IsIntegralCurveOn γ v s) :
-    ContinuousOn γ s := fun t ht ↦ (hγ t ht).continuousWithinAt
+    ContinuousOn γ s := (hγ · · |>.continuousWithinAt)
 
 lemma IsIntegralCurveAt.continuousAt (hγ : IsIntegralCurveAt γ v t₀) :
     ContinuousAt γ t₀ :=
@@ -141,4 +131,4 @@ lemma IsIntegralCurveAt.continuousAt (hγ : IsIntegralCurveAt γ v t₀) :
   hγ.continuousWithinAt (mem_of_mem_nhds hs) |>.continuousAt hs
 
 lemma IsIntegralCurve.continuous (hγ : IsIntegralCurve γ v) : Continuous γ :=
-  continuous_iff_continuousAt.mpr fun t ↦ (hγ.isIntegralCurveAt t).continuousAt
+  continuous_iff_continuousAt.mpr (hγ.isIntegralCurveAt · |>.continuousAt)
