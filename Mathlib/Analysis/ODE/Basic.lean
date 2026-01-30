@@ -10,17 +10,17 @@ public import Mathlib.Analysis.Calculus.Deriv.Basic
 /-!
 # Integral curves of vector fields on a Banach space
 
-Let `E` be a Banach space and `v : E → E` be a vector field on `E`. An integral curve of `v` is a
-function `γ : ℝ → E` such that the derivative of `γ` at `t` equals `v t (γ t)`. The integral curve
-may only be defined for all `t` within some subset of `ℝ`.
+Let `E` be a Banach space and `v : ℝ → E → E` be a time-dependent vector field on `E`. An integral
+curve  of `v` is a function `γ : ℝ → E` such that the derivative of `γ` at `t` equals `v t (γ t)`.
+The integral curve may only be defined for all `t` within some subset of `ℝ`.
 
 ## Main definitions
 
-Let `v : E → E` be a vector field on `E`, and let `γ : ℝ → E`.
-* `IsIntegralCurve γ v`: `γ t` is tangent to `v (γ t)` for all `t : ℝ`. That is, `γ` is a global
+Let `v : ℝ → E → E` be a time-dependent vector field on `E`, and let `γ : ℝ → E`.
+* `IsIntegralCurve γ v`: `γ t` is tangent to `v t (γ t)` for all `t : ℝ`. That is, `γ` is a global
   integral curve of `v`.
-* `IsIntegralCurveOn γ v s`: `γ t` is tangent to `v (γ t)` for all `t ∈ s`, where `s : Set ℝ`.
-* `IsIntegralCurveAt γ v t₀`: `γ t` is tangent to `v (γ t)` for all `t` in some open interval
+* `IsIntegralCurveOn γ v s`: `γ t` is tangent to `v t (γ t)` for all `t ∈ s`, where `s : Set ℝ`.
+* `IsIntegralCurveAt γ v t₀`: `γ t` is tangent to `v t (γ t)` for all `t` in some open interval
   around `t₀`. That is, `γ` is a local integral curve of `v`.
 
 ## TODO
@@ -40,23 +40,21 @@ open Set
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 
-/-- `IsIntegralCurveOn γ v s` means `γ t` is tangent to `v (γ t)` within `s` for all `t ∈ s`. The
-value of `γ` outside of `s` is irrelevant and considered junk. -/
-def IsIntegralCurveOn (γ : ℝ → E) (v : E → E) (s : Set ℝ) : Prop :=
-  ∀ t ∈ s, HasDerivWithinAt γ (v (γ t)) s t
+/-- `IsIntegralCurveOn γ v s` means `γ t` is tangent to `v t (γ t)` within `s` for all `t ∈ s`. -/
+def IsIntegralCurveOn (γ : ℝ → E) (v : ℝ → E → E) (s : Set ℝ) : Prop :=
+  ∀ t ∈ s, HasDerivWithinAt γ (v t (γ t)) s t
 
 /-- `IsIntegralCurveAt γ v t₀` means `γ : ℝ → E` is a local integral curve of `v` in a neighbourhood
-containing `t₀`. The value of `γ` outside of this neighbourhood is irrelevant and considered
-junk. -/
-def IsIntegralCurveAt (γ : ℝ → E) (v : E → E) (t₀ : ℝ) : Prop :=
-  ∀ᶠ t in 𝓝 t₀, HasDerivAt γ (v (γ t)) t
+containing `t₀`. -/
+def IsIntegralCurveAt (γ : ℝ → E) (v : ℝ → E → E) (t₀ : ℝ) : Prop :=
+  ∀ᶠ t in 𝓝 t₀, HasDerivAt γ (v t (γ t)) t
 
 /-- `IsIntegralCurve γ v` means `γ : ℝ → E` is a global integral curve of `v`. That is, `γ t` is
-tangent to `v (γ t)` for all `t : ℝ`. -/
-def IsIntegralCurve (γ : ℝ → E) (v : E → E) : Prop :=
-  ∀ t : ℝ, HasDerivAt γ (v (γ t)) t
+tangent to `v t (γ t)` for all `t : ℝ`. -/
+def IsIntegralCurve (γ : ℝ → E) (v : ℝ → E → E) : Prop :=
+  ∀ t : ℝ, HasDerivAt γ (v t (γ t)) t
 
-variable {γ γ' : ℝ → E} {v : E → E} {s s' : Set ℝ} {t₀ : ℝ}
+variable {γ γ' : ℝ → E} {v : ℝ → E → E} {s s' : Set ℝ} {t₀ : ℝ}
 
 lemma IsIntegralCurve.isIntegralCurveOn (h : IsIntegralCurve γ v) (s : Set ℝ) :
     IsIntegralCurveOn γ v s := fun t _ ↦ (h t).hasDerivWithinAt
@@ -101,7 +99,7 @@ lemma IsIntegralCurveOn.mono (h : IsIntegralCurveOn γ v s) (hs : s' ⊆ s) :
     IsIntegralCurveOn γ v s' := fun t ht ↦ h t (hs ht) |>.mono hs
 
 lemma IsIntegralCurveAt.hasDerivAt (h : IsIntegralCurveAt γ v t₀) :
-    HasDerivAt γ (v (γ t₀)) t₀ :=
+    HasDerivAt γ (v t₀ (γ t₀)) t₀ :=
   have ⟨_, hs, h⟩ := isIntegralCurveAt_iff_exists_mem_nhds.mp h
   h t₀ (mem_of_mem_nhds hs) |>.hasDerivAt hs
 
