@@ -225,7 +225,7 @@ lemma _root_.DifferentiableAt.mem_interior_convex_of_surjective_fderiv {E H : Ty
   -- This follows from `F ∘ f` taking on a local maximum at `e.extend I x`.
   have hF' : MapsTo F s (Iic (F (f x))) := by
     rw [← hs'.closure_eq, ← closure_Iio, ← hs.closure_interior_eq_closure_of_nonempty_interior hs'']
-    exact MapsTo.closure hF F.continuous
+    exact .closure hF F.continuous
   have hFφ : IsLocalMax (F ∘ f) x := Filter.eventually_of_mem hu fun y hy ↦ hF' <| hfus hy
   have h := hFφ.fderiv_eq_zero
   rw [fderiv_comp _ (by fun_prop) hf, ContinuousLinearMap.fderiv] at h
@@ -256,40 +256,29 @@ lemma isInteriorPoint_iff_of_mem_atlas {n : WithTop ℕ∞} [IsManifold I n M] (
   let φ := (e.extend I).symm.trans (e'.extend I)
   have hφ : ContDiffOn 𝕜 n φ φ.source := e'.contDiffOn_extend_coord_change
     (IsManifold.subset_maximalAtlas he') (IsManifold.subset_maximalAtlas he)
-  have hφ' : ContDiffOn 𝕜 n φ.symm φ.target := e.contDiffOn_extend_coord_change
-    (IsManifold.subset_maximalAtlas he) (IsManifold.subset_maximalAtlas he')
-  suffices h : e'.extend I x ∉ interior (range I) →
-      ¬Function.Surjective (fderivWithin 𝕜 φ φ.source (e.extend I x)) by
-    rw [not_imp_not] at h
+  suffices h : Function.Surjective (fderivWithin 𝕜 φ φ.source (e.extend I x)) →
+      e'.extend I x ∈ interior (range I) by
     refine e'.mem_interior_extend_target (by simp [hex']) <| h ?_
-    refine ContinuousLinearMap.IsInvertible.surjective ?_
-    exact isInvertible_fderivWithin_extCoordChange hn (IsManifold.subset_maximalAtlas he)
-      (IsManifold.subset_maximalAtlas he') <| by simp [hex, hex']
-  intro hx'
-  /- Reduce the situation to the real case, then apply Hahn-Banach to `x` and `interior (range I)`
-  to get a functional `F` that is greater on `e'.extend I x` than on all of `interior (range I)`. -/
+    exact (isInvertible_fderivWithin_extCoordChange hn (IsManifold.subset_maximalAtlas he)
+      (IsManifold.subset_maximalAtlas he') <| by simp [hex, hex']).surjective
+  intro hφx'
+  /- Reduce the situation to the real case, then apply
+  `DifferentiableAt.mem_interior_convex_of_surjective_fderiv`. -/
   wlog _ : IsRCLikeNormedField 𝕜
-  · simp [I.range_eq_univ_of_not_isRCLikeNormedField ‹_›] at hx'
+  · simp [I.range_eq_univ_of_not_isRCLikeNormedField ‹_›]
   let _ := IsRCLikeNormedField.rclike 𝕜
-  let _ := Module.compHom E (algebraMap ℝ 𝕜)
-  have : IsScalarTower ℝ 𝕜 E := ⟨by intros; rw [Algebra.smul_def, mul_smul]; rfl⟩
-  let _ : NormedSpace ℝ E := {
-    norm_smul_le r x := (norm_smul_le (r : 𝕜) x).trans <| by simp }
-  have hφx : e.extend I x ∈ interior φ.source := by
-    simp_rw [φ, PartialEquiv.trans_source, PartialEquiv.symm_source, interior_inter, mem_inter_iff,
-      hx, true_and, e'.extend_source, mem_interior_iff_mem_nhds]
+  let _ : NormedSpace ℝ E := NormedSpace.restrictScalars ℝ 𝕜 E
+  have hφx : φ.source ∈ 𝓝 (e.extend I x) := by
+    simp_rw [φ, PartialEquiv.trans_source, PartialEquiv.symm_source, Filter.inter_mem_iff,
+      mem_interior_iff_mem_nhds.1 hx, true_and, e'.extend_source]
     exact e.extend_preimage_mem_nhds hex <| e'.open_source.mem_nhds hex'
   rw [← ContinuousLinearMap.coe_restrictScalars' (R := ℝ),
     (hφ.differentiableOn hn _ (by simp [φ, hex, hex'])).restrictScalars_fderivWithin (𝕜 := ℝ)
-      (uniqueDiffWithinAt_of_mem_nhds <| mem_interior_iff_mem_nhds.1 hφx),
-    fderivWithin_of_mem_nhds <| mem_interior_iff_mem_nhds.1 hφx]
-  contrapose hx'
+      (uniqueDiffWithinAt_of_mem_nhds hφx), fderivWithin_of_mem_nhds <| hφx] at hφx'
   rw [show e'.extend I x = φ (e.extend I x) by simp [φ, hex]]
-  replace hφ := (((hφ.restrict_scalars ℝ).differentiableOn hn).differentiableAt <|
-    mem_interior_iff_mem_nhds.1 hφx)
-  exact hφ.mem_interior_convex_of_surjective_fderiv (mem_interior_iff_mem_nhds.1 hφx)
-    I.convex_range I.isClosed_range I.nonempty_interior
-    (φ.mapsTo.mono_right <| by simp [φ, inter_assoc]) hx'
+  replace hφ := ((hφ.restrict_scalars ℝ).differentiableOn hn).differentiableAt hφx
+  exact hφ.mem_interior_convex_of_surjective_fderiv hφx I.convex_range I.isClosed_range
+    I.nonempty_interior (φ.mapsTo.mono_right <| by simp [φ, inter_assoc]) hφx'
 
 /-- A point `x` in a C¹ manifold is a boundary point iff it gets mapped to the boundary of the
 model space by any given chart - i.e., the notion of boundary points does not depend
