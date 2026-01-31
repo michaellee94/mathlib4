@@ -212,7 +212,7 @@ Note that in general, this is actually quite nontrivial; that is why are focusin
 manifolds here. For merely topological finite-dimensional manifolds the proof involves singular
 homology, and for infinite-dimensional topological manifolds I don't even know if this lemma holds.
 -/
-lemma isInteriorPoint_iff_of_mem_atlas {n : WithTop ℕ∞} [IsManifold I n M] (hn : 1 ≤ n)
+lemma isInteriorPoint_iff_of_mem_atlas {n : WithTop ℕ∞} [IsManifold I n M] (hn : n ≠ 0)
     {e : OpenPartialHomeomorph M H} (he : e ∈ atlas H M) {x : M} (hx : x ∈ e.source) :
     I.IsInteriorPoint x ↔ e.extend I x ∈ interior (e.extend I).target := by
   -- it suffices to show that if `x` is interior in one chart `e` it also is in any other chart `e'`
@@ -284,7 +284,7 @@ boundary of the model space by any given chart - i.e., the notion of boundary po
 on any choice of charts, so that talking about `ModelWithCorners.boundary` actually makes sense.
 
 Also see `ModelWithCorners.isInteriorPoint_iff_of_mem_atlas`. -/
-lemma isBoundaryPoint_iff_of_mem_atlas {n : WithTop ℕ∞} [IsManifold I n M] (hn : 1 ≤ n)
+lemma isBoundaryPoint_iff_of_mem_atlas {n : WithTop ℕ∞} [IsManifold I n M] (hn : n ≠ 0)
     {e : OpenPartialHomeomorph M H} (he : e ∈ atlas H M) {x : M} (hx : x ∈ e.source) :
     I.IsBoundaryPoint x ↔ e.extend I x ∈ frontier (e.extend I).target := by
   rw [← not_iff_not, ← I.isInteriorPoint_iff_not_isBoundaryPoint,
@@ -295,7 +295,7 @@ lemma isBoundaryPoint_iff_of_mem_atlas {n : WithTop ℕ∞} [IsManifold I n M] (
 
 This is currently only proven for C¹ manifolds, but should hold at least for finite-dimensional
 topological manifolds too; see `ModelWithCorners.isInteriorPoint_iff_of_mem_atlas`. -/
-protected lemma isOpen_interior {n : WithTop ℕ∞} [IsManifold I n M] (hn : 1 ≤ n) :
+protected lemma isOpen_interior {n : WithTop ℕ∞} [IsManifold I n M] (hn : n ≠ 0) :
     IsOpen (I.interior M) := by
   refine isOpen_iff_forall_mem_open.2 fun x hx ↦ ⟨_, ?_, isOpen_extChartAt_preimage (I := I) x
     isOpen_interior, mem_chart_source H x, isInteriorPoint_iff.1 hx⟩
@@ -305,7 +305,7 @@ protected lemma isOpen_interior {n : WithTop ℕ∞} [IsManifold I n M] (hn : 1 
 
 This is currently only proven for C¹ manifolds, but should hold at least for finite-dimensional
 topological manifolds too; see `ModelWithCorners.isInteriorPoint_iff_of_mem_atlas`. -/
-protected lemma isClosed_boundary {n : WithTop ℕ∞} [IsManifold I n M] (hn : 1 ≤ n) :
+protected lemma isClosed_boundary {n : WithTop ℕ∞} [IsManifold I n M] (hn : n ≠ 0) :
     IsClosed (I.boundary M) := by
   rw [← I.compl_interior, isClosed_compl_iff]
   exact I.isOpen_interior hn
@@ -469,33 +469,8 @@ lemma interior_disjointUnion :
     ModelWithCorners.interior (I := I) (M ⊕ M') =
       Sum.inl '' (ModelWithCorners.interior (I := I) M)
       ∪ Sum.inr '' (ModelWithCorners.interior (I := I) M') := by
-  ext p
-  constructor
-  · intro hp
-    by_cases h : Sum.isLeft p
-    · left
-      exact ⟨Sum.getLeft p h, isInteriorPoint_disjointUnion_left hp h, Sum.inl_getLeft p h⟩
-    · replace h := Sum.not_isLeft.mp h
-      right
-      exact ⟨Sum.getRight p h, isInteriorPoint_disjointUnion_right hp h, Sum.inr_getRight p h⟩
-  · intro hp
-    by_cases h : Sum.isLeft p
-    · set x := Sum.getLeft p h with x_eq
-      rw [Sum.eq_left_getLeft_of_isLeft h]
-      apply interiorPoint_inl x
-      have hp : p ∈ Sum.inl '' (ModelWithCorners.interior (I := I) M) := by
-        obtain (good | ⟨y, hy, hxy⟩) := hp
-        exacts [good, (not_isLeft_and_isRight ⟨h, by rw [← hxy]; exact rfl⟩).elim]
-      obtain ⟨x', hx', hx'p⟩ := hp
-      simpa [x_eq, ← hx'p, Sum.getLeft_inl]
-    · set x := Sum.getRight p (Sum.not_isLeft.mp h) with x_eq
-      rw [Sum.eq_right_getRight_of_isRight (Sum.not_isLeft.mp h)]
-      apply interiorPoint_inr x
-      have hp : p ∈ Sum.inr '' (ModelWithCorners.interior (I := I) M') := by
-        obtain (⟨y, hy, hxy⟩ | good) := hp
-        exacts [(not_isLeft_and_isRight ⟨by rw [← hxy]; exact rfl, Sum.not_isLeft.mp h⟩).elim, good]
-      obtain ⟨x', hx', hx'p⟩ := hp
-      simpa [x_eq, ← hx'p, Sum.getRight_inr]
+  grind [boundaryPoint_inl, boundaryPoint_inr, interior.eq_def, interiorPoint_inl,
+    interiorPoint_inr, isInteriorPoint_iff_not_isBoundaryPoint]
 
 lemma boundary_disjointUnion : ModelWithCorners.boundary (I := I) (M ⊕ M') =
       Sum.inl '' (ModelWithCorners.boundary (I := I) M)
