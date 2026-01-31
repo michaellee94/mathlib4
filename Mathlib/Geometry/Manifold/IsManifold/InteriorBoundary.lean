@@ -279,8 +279,8 @@ lemma isInteriorPoint_iff_of_mem_atlas {n : WithTop ℕ∞} [IsManifold I n M] (
     mem_interior_iff_mem_nhds.1 hφx), ContinuousLinearMap.fderiv] at h
   exact DFunLike.congr_fun h
 
-/-- A point `x` in a manifold that is at least C¹ is a boundary point iff it gets mapped to the
-boundary of the model space by any given chart - i.e., the notion of boundary points does not depend
+/-- A point `x` in a C¹ manifold is a boundary point iff it gets mapped to the boundary of the
+model space by any given chart - i.e., the notion of boundary points does not depend
 on any choice of charts, so that talking about `ModelWithCorners.boundary` actually makes sense.
 
 Also see `ModelWithCorners.isInteriorPoint_iff_of_mem_atlas`. -/
@@ -293,7 +293,7 @@ lemma isBoundaryPoint_iff_of_mem_atlas {n : WithTop ℕ∞} [IsManifold I n M] (
 
 /-- The interior of any C¹ manifold is open.
 
-This is currently only proven for C¹ manifolds, but should hold at least for finite-dimensional
+This is currently only proven for C¹ manifolds, but holds at least for finite-dimensional
 topological manifolds too; see `ModelWithCorners.isInteriorPoint_iff_of_mem_atlas`. -/
 protected lemma isOpen_interior {n : WithTop ℕ∞} [IsManifold I n M] (hn : n ≠ 0) :
     IsOpen (I.interior M) := by
@@ -303,7 +303,7 @@ protected lemma isOpen_interior {n : WithTop ℕ∞} [IsManifold I n M] (hn : n 
 
 /-- The boundary of any C¹ manifold is closed.
 
-This is currently only proven for C¹ manifolds, but should hold at least for finite-dimensional
+This is currently only proven for C¹ manifolds, but holds at least for finite-dimensional
 topological manifolds too; see `ModelWithCorners.isInteriorPoint_iff_of_mem_atlas`. -/
 protected lemma isClosed_boundary {n : WithTop ℕ∞} [IsManifold I n M] (hn : n ≠ 0) :
     IsClosed (I.boundary M) := by
