@@ -411,12 +411,13 @@ lemma isInvertible_fderivWithin_extCoordChange [ChartedSpace H M] {n : WithTop �
   have hφ : ContDiffOn 𝕜 n φ φ.source := I.contDiffOn_extCoordChange he he'
   have hφ' : ContDiffOn 𝕜 n φ.symm φ.target := I.contDiffOn_extCoordChange_symm he he'
   refine .of_inverse (g := (fderivWithin 𝕜 φ.symm φ.target (φ x))) ?_ ?_
-  · rw [← φ.left_inv hx, φ.right_inv (φ.map_source hx), ← fderivWithin_comp _
-      (φ.left_inv hx ▸ ((hφ _ hx).differentiableWithinAt hn):)
-      ((hφ' _ (φ.map_source hx)).differentiableWithinAt hn) φ.symm_mapsTo
-      (I.uniqueDiffOn_extCoordChange_source _ (φ.map_source hx)),
-      fderivWithin_congr' φ.rightInvOn.eqOn (φ.map_source hx)]
-    exact fderivWithin_id (I.uniqueDiffOn_extCoordChange_source _ (φ.map_source hx))
+  · rw [← φ.left_inv hx, φ.right_inv (φ.map_source hx), ← fderivWithin_comp,
+      fderivWithin_congr' φ.rightInvOn.eqOn (φ.map_source hx), fderivWithin_id]
+    · exact I.uniqueDiffOn_extCoordChange_source _ (φ.map_source hx)
+    · exact (φ.left_inv hx ▸ ((hφ _ hx).differentiableWithinAt hn):)
+    · exact (hφ' _ (φ.map_source hx)).differentiableWithinAt hn
+    · exact φ.symm_mapsTo
+    · exact I.uniqueDiffOn_extCoordChange_source _ (φ.map_source hx)
   · rw [← fderivWithin_comp _ ((hφ' _ (φ.map_source hx)).differentiableWithinAt hn)
       ((hφ _ hx).differentiableWithinAt hn) φ.mapsTo (I.uniqueDiffOn_extCoordChange_source _ hx),
       fderivWithin_congr' φ.leftInvOn.eqOn hx,

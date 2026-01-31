@@ -231,9 +231,9 @@ lemma _root_.DifferentiableAt.mem_interior_convex_of_surjective_fderiv {E H : Ty
   rw [fderiv_comp _ (by fun_prop) hf, ContinuousLinearMap.fderiv] at h
   exact DFunLike.congr_fun h
 
-/-- A point `x` in a manifold that is at least C¹ is an interior point iff it gets mapped to the
-interior of the model space by any given chart - i.e., the notion of interior points does not depend
-on any choice of charts, so that talking about `ModelWithCorners.interior` actually makes sense.
+/-- A point `x` in a C¹ manifold is an interior point iff it gets mapped to the interior of
+the model space by any given chart - in other words, the notion of interior points does not depend
+on any choice of charts.
 
 Note that in general, this is actually quite nontrivial; that is why are focusing only on C¹
 manifolds here. For merely topological finite-dimensional manifolds the proof involves singular
