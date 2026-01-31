@@ -204,6 +204,33 @@ end BoundarylessManifold
 
 section ChartIndependence
 
+/-- If a function `f : E → H` is differentiable at `x`, sends a neighbourhood `u` of `x` to a
+closed convex set `s` with nonempty interior and has surjective differential at `x`, it must send
+`x` to the interior of `s`.
+TODO: find home (`#find_home` says this file) -/
+lemma _root_.DifferentiableAt.mem_interior_convex_of_surjective_fderiv {E H : Type*}
+    [NormedAddCommGroup E] [NormedSpace ℝ E] [NormedAddCommGroup H] [NormedSpace ℝ H] {f : E → H}
+    {x : E} (hf : DifferentiableAt ℝ f x) {u : Set E} (hu : u ∈ 𝓝 x) {s : Set H} (hs : Convex ℝ s)
+    (hs' : IsClosed s) (hs'' : (interior s).Nonempty) (hfus : Set.MapsTo f u s)
+    (hfx : Function.Surjective (fderiv ℝ f x)) : f x ∈ interior s := by
+  contrapose hfx
+  have ⟨F, hF⟩ := geometric_hahn_banach_open_point hs.interior isOpen_interior hfx
+  -- It suffices to show that `fderiv ℝ f x` sends everything to the kernel of `F`.
+  suffices h : ∀ y, F (fderiv ℝ f x y) = 0 by
+    have ⟨y, hy⟩ := hs''
+    unfold Function.Surjective; push_neg
+    refine ⟨f x - y, fun z ↦ ne_of_apply_ne F ?_⟩
+    rw [h z, F.map_sub]
+    exact (sub_pos.2 <| hF _ hy).ne
+  -- This follows from `F ∘ f` taking on a local maximum at `e.extend I x`.
+  have hF' : MapsTo F s (Iic (F (f x))) := by
+    rw [← hs'.closure_eq, ← closure_Iio, ← hs.closure_interior_eq_closure_of_nonempty_interior hs'']
+    exact MapsTo.closure hF F.continuous
+  have hFφ : IsLocalMax (F ∘ f) x := Filter.eventually_of_mem hu fun y hy ↦ hF' <| hfus hy
+  have h := hFφ.fderiv_eq_zero
+  rw [fderiv_comp _ (by fun_prop) hf, ContinuousLinearMap.fderiv] at h
+  exact DFunLike.congr_fun h
+
 /-- A point `x` in a manifold that is at least C¹ is an interior point iff it gets mapped to the
 interior of the model space by any given chart - i.e., the notion of interior points does not depend
 on any choice of charts, so that talking about `ModelWithCorners.interior` actually makes sense.
@@ -256,28 +283,13 @@ lemma isInteriorPoint_iff_of_mem_atlas {n : WithTop ℕ∞} [IsManifold I n M] (
     (hφ.differentiableOn hn _ (by simp [φ, hex, hex'])).restrictScalars_fderivWithin (𝕜 := ℝ)
       (uniqueDiffWithinAt_of_mem_nhds <| mem_interior_iff_mem_nhds.1 hφx),
     fderivWithin_of_mem_nhds <| mem_interior_iff_mem_nhds.1 hφx]
-  have ⟨F, hF⟩ := geometric_hahn_banach_open_point I.convex_range.interior isOpen_interior hx'
-  -- It suffices to show that `fderiv ℝ φ (e.extend I x) y` sends everything to the kernel of `F`.
-  suffices h : ∀ y, F (fderiv ℝ φ (e.extend I x) y) = 0 by
-    have ⟨y, hy⟩ := I.nonempty_interior
-    unfold Function.Surjective; push_neg
-    refine ⟨e'.extend I x - y, fun z ↦ ne_of_apply_ne F ?_⟩
-    rw [h z, F.map_sub]
-    exact (sub_pos.2 <| hF _ hy).ne
-  -- This follows from `F ∘ φ` taking on a local maximum at `e.extend I x`.
-  have hF' : ∀ y ∈ range I, F y ≤ F (e'.extend I x) := by
-    change MapsTo F _ (Iic _)
-    rw [← I.isClosed_range.closure_eq, ← closure_Iio,
-      ← I.convex_range.closure_interior_eq_closure_of_nonempty_interior I.nonempty_interior]
-    exact MapsTo.closure hF F.continuous
-  have hFφ : IsLocalMax (F ∘ φ) (e.extend I x) :=
-    Filter.eventually_of_mem (mem_interior_iff_mem_nhds.1 hφx) fun y hy ↦
-      (hF' (φ y) ((show φ.target ⊆ range I by simp [φ, inter_assoc]) (φ.mapsTo hy))).trans_eq <|
-        congr_arg F <| by simp [φ, hex]
-  have h := hFφ.fderiv_eq_zero
-  rw [fderiv_comp _ (by fun_prop) (((hφ.restrict_scalars ℝ).differentiableOn hn).differentiableAt <|
-    mem_interior_iff_mem_nhds.1 hφx), ContinuousLinearMap.fderiv] at h
-  exact DFunLike.congr_fun h
+  contrapose hx'
+  rw [show e'.extend I x = φ (e.extend I x) by simp [φ, hex]]
+  replace hφ := (((hφ.restrict_scalars ℝ).differentiableOn hn).differentiableAt <|
+    mem_interior_iff_mem_nhds.1 hφx)
+  exact hφ.mem_interior_convex_of_surjective_fderiv (mem_interior_iff_mem_nhds.1 hφx)
+    I.convex_range I.isClosed_range I.nonempty_interior
+    (φ.mapsTo.mono_right <| by simp [φ, inter_assoc]) hx'
 
 /-- A point `x` in a C¹ manifold is a boundary point iff it gets mapped to the boundary of the
 model space by any given chart - i.e., the notion of boundary points does not depend
