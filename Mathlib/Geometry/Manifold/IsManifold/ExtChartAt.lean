@@ -418,10 +418,12 @@ lemma isInvertible_fderivWithin_extCoordChange [ChartedSpace H M] {n : WithTop �
     · exact (hφ' _ (φ.map_source hx)).differentiableWithinAt hn
     · exact φ.symm_mapsTo
     · exact I.uniqueDiffOn_extCoordChange_source _ (φ.map_source hx)
-  · rw [← fderivWithin_comp _ ((hφ' _ (φ.map_source hx)).differentiableWithinAt hn)
-      ((hφ _ hx).differentiableWithinAt hn) φ.mapsTo (I.uniqueDiffOn_extCoordChange_source _ hx),
-      fderivWithin_congr' φ.leftInvOn.eqOn hx,
-      fderivWithin_id (I.uniqueDiffOn_extCoordChange_source _ hx)]
+  · rw [← fderivWithin_comp, fderivWithin_congr' φ.leftInvOn.eqOn hx, fderivWithin_id]
+    · exact I.uniqueDiffOn_extCoordChange_source _ hx
+    · exact (hφ' _ (φ.map_source hx)).differentiableWithinAt hn
+    · exact (hφ _ hx).differentiableWithinAt hn
+    · exact φ.mapsTo
+    · exact I.uniqueDiffOn_extCoordChange_source _ hx
 
 end ModelWithCorners
 
