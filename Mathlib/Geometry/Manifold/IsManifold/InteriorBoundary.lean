@@ -78,12 +78,12 @@ variable {𝕜 : Type*} [NontriviallyNormedField 𝕜]
 namespace ModelWithCorners
 
 variable (I) in
-/-- `p ∈ M` is an interior point of a manifold `M` iff its image in the extended chart
+/-- `p ∈ M` is an interior point of a manifold `M` if and only if its image in the extended chart
 lies in the interior of the model space. -/
 def IsInteriorPoint (x : M) := extChartAt I x x ∈ interior (range I)
 
 variable (I) in
-/-- `p ∈ M` is a boundary point of a manifold `M` iff its image in the extended chart
+/-- `p ∈ M` is a boundary point of a manifold `M` if and only if its image in the extended chart
 lies on the boundary of the model space. -/
 def IsBoundaryPoint (x : M) := extChartAt I x x ∈ frontier (range I)
 
@@ -187,7 +187,7 @@ lemma Boundaryless.boundary_eq_empty [BoundarylessManifold I M] : I.boundary M =
 instance [BoundarylessManifold I M] : IsEmpty (I.boundary M) :=
   isEmpty_coe_sort.mpr Boundaryless.boundary_eq_empty
 
-/-- `M` is boundaryless iff its boundary is empty. -/
+/-- `M` is boundaryless if and only if its boundary is empty. -/
 lemma Boundaryless.iff_boundary_eq_empty : I.boundary M = ∅ ↔ BoundarylessManifold I M := by
   refine ⟨fun h ↦ { isInteriorPoint' := ?_ }, fun a ↦ boundary_eq_empty⟩
   intro x
@@ -231,9 +231,9 @@ lemma _root_.DifferentiableAt.mem_interior_convex_of_surjective_fderiv {E H : Ty
   rw [fderiv_comp _ (by fun_prop) hf, ContinuousLinearMap.fderiv] at h
   exact DFunLike.congr_fun h
 
-/-- A point `x` in a C¹ manifold is an interior point iff it gets mapped to the interior of
-the model space by any given chart - in other words, the notion of interior points does not depend
-on any choice of charts.
+/-- A point `x` in a C¹ manifold is an interior point if and only if it gets mapped to the interior
+of the model space by any given chart - in other words, the notion of interior points does not
+depend on any choice of charts.
 
 Note that in general, this is actually quite nontrivial; that is why are focusing only on C¹
 manifolds here. For merely topological finite-dimensional manifolds the proof involves singular
@@ -280,9 +280,9 @@ lemma isInteriorPoint_iff_of_mem_atlas {n : WithTop ℕ∞} [IsManifold I n M] (
   exact hφ.mem_interior_convex_of_surjective_fderiv hφx I.convex_range I.isClosed_range
     I.nonempty_interior (φ.mapsTo.mono_right <| by simp [φ, inter_assoc]) hφx'
 
-/-- A point `x` in a C¹ manifold is a boundary point iff it gets mapped to the boundary of the
-model space by any given chart - i.e., the notion of boundary points does not depend
-on any choice of charts, so that talking about `ModelWithCorners.boundary` actually makes sense.
+/-- A point `x` in a C¹ manifold is a boundary point if and only if it gets mapped to the boundary
+of the model space by any given chart - in other words, the notion of boundary points does not
+depend on any choice of charts.
 
 Also see `ModelWithCorners.isInteriorPoint_iff_of_mem_atlas`. -/
 lemma isBoundaryPoint_iff_of_mem_atlas {n : WithTop ℕ∞} [IsManifold I n M] (hn : n ≠ 0)
