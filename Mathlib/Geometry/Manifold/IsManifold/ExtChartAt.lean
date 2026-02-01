@@ -377,34 +377,32 @@ namespace ModelWithCorners
 def extCoordChange (e e' : OpenPartialHomeomorph M H) : PartialEquiv E E :=
   (e.extend I).symm.trans (e'.extend I)
 
-lemma extCoordChange_symm {e e' : OpenPartialHomeomorph M H} :
-    (I.extCoordChange e e').symm = I.extCoordChange e' e := by
+variable {e e' : OpenPartialHomeomorph M H}
+
+lemma extCoordChange_symm : (I.extCoordChange e e').symm = I.extCoordChange e' e := by
   rfl
 
-lemma contDiffOn_extCoordChange [ChartedSpace H M] {n : WithTop ℕ∞}
-    {e e' : OpenPartialHomeomorph M H} (he : e ∈ IsManifold.maximalAtlas I n M)
+lemma uniqueDiffOn_extCoordChange_source : UniqueDiffOn 𝕜 (I.extCoordChange e e').source := by
+  rw [extCoordChange_source, inter_assoc, inter_comm, preimage_comp, ← preimage_inter]
+  exact I.uniqueDiffOn_preimage <| e.isOpen_inter_preimage_symm e'.open_source
+
+lemma uniqueDiffOn_extCoordChange_target : UniqueDiffOn 𝕜 (I.extCoordChange e e').target := by
+  rw [← extCoordChange_symm, PartialEquiv.symm_target]
+  exact uniqueDiffOn_extCoordChange_source
+
+variable [ChartedSpace H M] {n : WithTop ℕ∞}
+
+lemma contDiffOn_extCoordChange (he : e ∈ IsManifold.maximalAtlas I n M)
     (he' : e' ∈ IsManifold.maximalAtlas I n M) :
     ContDiffOn 𝕜 n (I.extCoordChange e e') (I.extCoordChange e e').source :=
   e'.contDiffOn_extend_coord_change he' he
 
-lemma contDiffOn_extCoordChange_symm [ChartedSpace H M] {n : WithTop ℕ∞}
-    {e e' : OpenPartialHomeomorph M H} (he : e ∈ IsManifold.maximalAtlas I n M)
+lemma contDiffOn_extCoordChange_symm (he : e ∈ IsManifold.maximalAtlas I n M)
     (he' : e' ∈ IsManifold.maximalAtlas I n M) :
     ContDiffOn 𝕜 n (I.extCoordChange e e').symm (I.extCoordChange e e').target :=
   e.contDiffOn_extend_coord_change he he'
 
-lemma uniqueDiffOn_extCoordChange_source {e e' : OpenPartialHomeomorph M H} :
-    UniqueDiffOn 𝕜 (I.extCoordChange e e').source := by
-  rw [extCoordChange_source, inter_assoc, inter_comm, preimage_comp, ← preimage_inter]
-  exact I.uniqueDiffOn_preimage <| e.isOpen_inter_preimage_symm e'.open_source
-
-lemma uniqueDiffOn_extCoordChange_target {e e' : OpenPartialHomeomorph M H} :
-    UniqueDiffOn 𝕜 (I.extCoordChange e e').target := by
-  rw [← extCoordChange_symm, PartialEquiv.symm_target]
-  exact uniqueDiffOn_extCoordChange_source
-
-lemma isInvertible_fderivWithin_extCoordChange [ChartedSpace H M] {n : WithTop ℕ∞}
-    (hn : n ≠ 0) {e e' : OpenPartialHomeomorph M H} (he : e ∈ IsManifold.maximalAtlas I n M)
+lemma isInvertible_fderivWithin_extCoordChange (hn : n ≠ 0) (he : e ∈ IsManifold.maximalAtlas I n M)
     (he' : e' ∈ IsManifold.maximalAtlas I n M) {x : E} (hx : x ∈ (I.extCoordChange e e').source) :
     (fderivWithin 𝕜 (I.extCoordChange e e') (I.extCoordChange e e').source x).IsInvertible := by
   set φ := I.extCoordChange e e'
