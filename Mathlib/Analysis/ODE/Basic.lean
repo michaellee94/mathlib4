@@ -8,11 +8,11 @@ module
 public import Mathlib.Analysis.Calculus.Deriv.Basic
 
 /-!
-# Integral curves of vector fields on a Banach space
+# Integral curves of vector fields on a normed vector space
 
-Let `E` be a Banach space and `v : ℝ → E → E` be a time-dependent vector field on `E`. An integral
-curve  of `v` is a function `γ : ℝ → E` such that the derivative of `γ` at `t` equals `v t (γ t)`.
-The integral curve may only be defined for all `t` within some subset of `ℝ`.
+Let `E` be a normed vector space and `v : ℝ → E → E` be a time-dependent vector field on `E`.
+An integral curve  of `v` is a function `γ : ℝ → E` such that the derivative of `γ` at `t` equals
+`v t (γ t)`. The integral curve may only be defined for all `t` within some subset of `ℝ`.
 
 ## Main definitions
 
