@@ -645,15 +645,13 @@ open interval `(tMin, tMax)` containing `t₀`, then a maximal solution exists.
 -/
 theorem exists_maximal_solution
     [CompleteSpace E]
-    (hpl_two_sided :
-      ∃ (tMin tMax : ℝ) (a r L K : ℝ≥0) (t₀' : Icc tMin tMax),
-        (t₀' : ℝ) = t₀ ∧ (tMin < t₀ ∧ t₀ < tMax) ∧ IsPicardLindelof v t₀' x₀ a r L K) :
+    (tMin tMax : ℝ) (a r L K : ℝ≥0) (t₀' : Icc tMin tMax)
+    (ht₀'_eq : (t₀' : ℝ) = t₀) (htMin_lt_t₀ : tMin < t₀) (ht₀_lt_tMax : t₀ < tMax)
+    (hpl_instance : IsPicardLindelof v t₀' x₀ a r L K) :
     ∃ (f : ℝ → E) (I : Set ℝ), IsMaximalODESolution v t₀ x₀ f I := by
   let S := LocalODESolution v t₀ x₀
   -- 1. Show S is non-empty using the guaranteed local solution from Picard-Lindelöf.
   have S_nonempty_instance : Nonempty S := by
-    obtain ⟨tMin, tMax, a, r, L, K, t₀', ht₀'_eq, ⟨htMin_lt_t₀, ht₀_lt_tMax⟩, hpl_instance⟩ :=
-      hpl_two_sided
     -- Picard-Lindelöf gives a solution `f₀` on `Icc tMin tMax`.
     have hx₀ : x₀ ∈ Metric.closedBall x₀ r := by
       simp only [Metric.mem_closedBall, dist_self, zero_le_coe]
@@ -723,8 +721,109 @@ on an open interval around `t₀`), there exists a maximal solution to the ODE `
 with initial condition `f(t₀) = x₀`.
 -/
 theorem exists_maximal_ode_solution [CompleteSpace E]
-    (hpl :
-      ∃ (tMin tMax : ℝ) (a r L K : ℝ≥0) (t₀' : Icc tMin tMax),
-        (t₀' : ℝ) = t₀ ∧ (tMin < t₀ ∧ t₀ < tMax) ∧ IsPicardLindelof v t₀' x₀ a r L K) :
-    ∃ (f : ℝ → E) (I : Set ℝ), IsMaximalODESolution v t₀ x₀ f I :=
-  MaximalSolutionExistence.exists_maximal_solution v t₀ x₀ hpl
+    (tMin tMax : ℝ) (a r L K : ℝ≥0) (t₀' : Icc tMin tMax)
+    (ht₀'_eq : (t₀' : ℝ) = t₀) (htMin_lt_t₀ : tMin < t₀) (ht₀_lt_tMax : t₀ < tMax)
+    (hpl_instance : IsPicardLindelof v t₀' x₀ a r L K) :
+    ∃ (f : ℝ → E) (I : Set ℝ), IsMaximalODESolution v t₀ x₀ f I ∧ t₀ ∈ I :=
+  by
+    obtain ⟨f, I, hmax⟩ :=
+      MaximalSolutionExistence.exists_maximal_solution v t₀ x₀
+        tMin tMax a r L K t₀' ht₀'_eq htMin_lt_t₀ ht₀_lt_tMax hpl_instance
+    exact ⟨f, I, hmax, hmax.t₀_mem⟩
+
+open Classical in
+noncomputable def maximalODESolution [CompleteSpace E]
+    (tMin tMax : ℝ) (a r L K : ℝ≥0) (t₀' : Icc tMin tMax)
+    (ht₀'_eq : (t₀' : ℝ) = t₀) (htMin_lt_t₀ : tMin < t₀) (ht₀_lt_tMax : t₀ < tMax)
+    (hpl_instance : IsPicardLindelof v t₀' x₀ a r L K) : ℝ → E :=
+  Classical.choose (exists_maximal_ode_solution v t₀ x₀ tMin tMax a r L K t₀'
+    ht₀'_eq htMin_lt_t₀ ht₀_lt_tMax hpl_instance)
+
+open Classical in
+noncomputable def maximalODESolutionDomain [CompleteSpace E]
+    (tMin tMax : ℝ) (a r L K : ℝ≥0) (t₀' : Icc tMin tMax)
+    (ht₀'_eq : (t₀' : ℝ) = t₀) (htMin_lt_t₀ : tMin < t₀) (ht₀_lt_tMax : t₀ < tMax)
+    (hpl_instance : IsPicardLindelof v t₀' x₀ a r L K) : Set ℝ :=
+  Classical.choose (Classical.choose_spec
+    (exists_maximal_ode_solution v t₀ x₀ tMin tMax a r L K t₀'
+      ht₀'_eq htMin_lt_t₀ ht₀_lt_tMax hpl_instance))
+
+open Classical in
+lemma maximalODESolution_spec [CompleteSpace E]
+    (tMin tMax : ℝ) (a r L K : ℝ≥0) (t₀' : Icc tMin tMax)
+    (ht₀'_eq : (t₀' : ℝ) = t₀) (htMin_lt_t₀ : tMin < t₀) (ht₀_lt_tMax : t₀ < tMax)
+    (hpl_instance : IsPicardLindelof v t₀' x₀ a r L K) :
+    IsMaximalODESolution v t₀ x₀
+      (maximalODESolution v t₀ x₀ tMin tMax a r L K t₀' ht₀'_eq htMin_lt_t₀ ht₀_lt_tMax
+        hpl_instance)
+      (maximalODESolutionDomain v t₀ x₀ tMin tMax a r L K t₀' ht₀'_eq htMin_lt_t₀ ht₀_lt_tMax
+        hpl_instance)
+      ∧ t₀ ∈ maximalODESolutionDomain v t₀ x₀ tMin tMax a r L K t₀' ht₀'_eq htMin_lt_t₀
+        ht₀_lt_tMax hpl_instance := by
+  simpa [maximalODESolution, maximalODESolutionDomain] using
+    (Classical.choose_spec
+      (Classical.choose_spec
+        (exists_maximal_ode_solution v t₀ x₀ tMin tMax a r L K t₀'
+          ht₀'_eq htMin_lt_t₀ ht₀_lt_tMax hpl_instance)))
+
+lemma maximalODESolution_isMaximal [CompleteSpace E]
+    (tMin tMax : ℝ) (a r L K : ℝ≥0) (t₀' : Icc tMin tMax)
+    (ht₀'_eq : (t₀' : ℝ) = t₀) (htMin_lt_t₀ : tMin < t₀) (ht₀_lt_tMax : t₀ < tMax)
+    (hpl_instance : IsPicardLindelof v t₀' x₀ a r L K) :
+    IsMaximalODESolution v t₀ x₀
+      (maximalODESolution v t₀ x₀ tMin tMax a r L K t₀' ht₀'_eq htMin_lt_t₀ ht₀_lt_tMax
+        hpl_instance)
+      (maximalODESolutionDomain v t₀ x₀ tMin tMax a r L K t₀' ht₀'_eq htMin_lt_t₀ ht₀_lt_tMax
+        hpl_instance) :=
+  (maximalODESolution_spec v t₀ x₀ tMin tMax a r L K t₀' ht₀'_eq htMin_lt_t₀ ht₀_lt_tMax
+    hpl_instance).1
+
+lemma maximalODESolution_t₀_mem [CompleteSpace E]
+    (tMin tMax : ℝ) (a r L K : ℝ≥0) (t₀' : Icc tMin tMax)
+    (ht₀'_eq : (t₀' : ℝ) = t₀) (htMin_lt_t₀ : tMin < t₀) (ht₀_lt_tMax : t₀ < tMax)
+    (hpl_instance : IsPicardLindelof v t₀' x₀ a r L K) :
+    t₀ ∈ maximalODESolutionDomain v t₀ x₀ tMin tMax a r L K t₀' ht₀'_eq htMin_lt_t₀
+      ht₀_lt_tMax hpl_instance :=
+  (maximalODESolution_spec v t₀ x₀ tMin tMax a r L K t₀' ht₀'_eq htMin_lt_t₀ ht₀_lt_tMax
+    hpl_instance).2
+
+lemma maximalODESolution_isSolution [CompleteSpace E]
+    (tMin tMax : ℝ) (a r L K : ℝ≥0) (t₀' : Icc tMin tMax)
+    (ht₀'_eq : (t₀' : ℝ) = t₀) (htMin_lt_t₀ : tMin < t₀) (ht₀_lt_tMax : t₀ < tMax)
+    (hpl_instance : IsPicardLindelof v t₀' x₀ a r L K) :
+    IsODESolution v t₀ x₀
+      (maximalODESolution v t₀ x₀ tMin tMax a r L K t₀' ht₀'_eq htMin_lt_t₀ ht₀_lt_tMax
+        hpl_instance)
+      (maximalODESolutionDomain v t₀ x₀ tMin tMax a r L K t₀' ht₀'_eq htMin_lt_t₀ ht₀_lt_tMax
+        hpl_instance) :=
+  (maximalODESolution_isMaximal v t₀ x₀ tMin tMax a r L K t₀' ht₀'_eq htMin_lt_t₀ ht₀_lt_tMax
+    hpl_instance).toIsODESolution
+
+theorem maximalODESolution_unique [CompleteSpace E]
+    (tMin tMax : ℝ) (a r L K : ℝ≥0) (t₀' : Icc tMin tMax)
+    (ht₀'_eq : (t₀' : ℝ) = t₀) (htMin_lt_t₀ : tMin < t₀) (ht₀_lt_tMax : t₀ < tMax)
+    (hpl_instance : IsPicardLindelof v t₀' x₀ a r L K)
+    {f₂ : ℝ → E} {I₂ : Set ℝ}
+    (h₂_max : IsMaximalODESolution v t₀ x₀ f₂ I₂)
+    (K_const : ℝ≥0)
+    (h_v_lipschitz_on_union :
+        ∀ (t_val : ℝ) (_ : t_val ∈
+          maximalODESolutionDomain v t₀ x₀ tMin tMax a r L K t₀' ht₀'_eq htMin_lt_t₀
+            ht₀_lt_tMax hpl_instance ∪ I₂),
+          LipschitzWith K_const (v t_val)) :
+    maximalODESolutionDomain v t₀ x₀ tMin tMax a r L K t₀' ht₀'_eq htMin_lt_t₀ ht₀_lt_tMax
+        hpl_instance = I₂
+      ∧ EqOn
+        (maximalODESolution v t₀ x₀ tMin tMax a r L K t₀' ht₀'_eq htMin_lt_t₀ ht₀_lt_tMax
+          hpl_instance)
+        f₂
+        (maximalODESolutionDomain v t₀ x₀ tMin tMax a r L K t₀' ht₀'_eq htMin_lt_t₀
+          ht₀_lt_tMax hpl_instance) := by
+  have h₁_max : IsMaximalODESolution v t₀ x₀
+      (maximalODESolution v t₀ x₀ tMin tMax a r L K t₀' ht₀'_eq htMin_lt_t₀ ht₀_lt_tMax
+        hpl_instance)
+      (maximalODESolutionDomain v t₀ x₀ tMin tMax a r L K t₀' ht₀'_eq htMin_lt_t₀ ht₀_lt_tMax
+        hpl_instance) :=
+    maximalODESolution_isMaximal v t₀ x₀ tMin tMax a r L K t₀' ht₀'_eq htMin_lt_t₀ ht₀_lt_tMax
+      hpl_instance
+  exact IsMaximalODESolution.unique v t₀ x₀ h₁_max h₂_max K_const h_v_lipschitz_on_union
