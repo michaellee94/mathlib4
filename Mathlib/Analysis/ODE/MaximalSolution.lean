@@ -3,6 +3,8 @@ Copyright (c) 2025 Michael Lee. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Michael Lee
 -/
+module
+
 import Mathlib.Analysis.ODE.Basic
 import Mathlib.Analysis.ODE.Gronwall
 import Mathlib.Analysis.ODE.PicardLindelof
@@ -316,9 +318,7 @@ theorem IsMaximalODESolution.unique
   -- The Lipschitz condition on `I₂ ∩ I₁` is the same as on `I₁ ∩ I₂`.
   have h_v_lipschitz_on_inter_symm :
       ∀ (t_val : ℝ) (_ : t_val ∈ I₂ ∩ I₁), LipschitzWith K_const (v t_val) := by
-    intro t_val ht_in_inter_symm
-    rw [inter_comm] at ht_in_inter_symm
-    exact h_v_lipschitz_on_inter t_val ht_in_inter_symm
+    simpa only [inter_comm, mem_inter_iff, and_imp] using h_v_lipschitz_on_inter
   have h_I₂_subset_I₁ : I₂ ⊆ I₁ :=
     IsIntegralCurveOn.subset_maximal_domain_with_lipschitz v t₀ x₀
       h₂_max.deriv h₂_max.isOpen h₂_max.isConnected ht₀₂ hf₂_t₀
@@ -469,6 +469,17 @@ instance : PartialOrder (QuotientLocalODESolution v t₀ x₀) where
     intro h₁₂ h₂₁; exact Quotient.sound ⟨h₁₂, h₂₁⟩
 
 
+/--
+If `C` is a chain of `LocalODESolution`s and `t` is in the domains of two solutions in `C`,
+then those solutions agree at `t`. This is because chains are totally ordered by extension.
+-/
+lemma chain_solutions_agree (C : Set (LocalODESolution v t₀ x₀)) (hC : IsChain (· ≤ ·) C)
+    (p₁ p₂ : LocalODESolution v t₀ x₀) (hp₁ : p₁ ∈ C) (hp₂ : p₂ ∈ C)
+    (t : ℝ) (ht₁ : t ∈ p₁.I) (ht₂ : t ∈ p₂.I) : p₁.f t = p₂.f t := by
+  rcases hC.total hp₁ hp₂ with h12 | h21
+  · exact h12.2 ht₁
+  · exact (h21.2 ht₂).symm
+
 open Classical in
 /--
 Constructs the supremum of a non-empty chain `C` of `LocalODESolution`s.
@@ -482,140 +493,79 @@ def chainSup (C : Set (LocalODESolution v t₀ x₀)) (hC : IsChain (· ≤ ·) 
   -- For any t ∈ I_sup, pick any solution p ∈ C such that t ∈ p.I, and define f_sup(t) = p.f(t).
   -- This is well-defined because C is a chain.
   let f_sup : ℝ → E := fun t =>
-    if ht : t ∈ I_sup then
-      let p_data := Classical.choose (Set.mem_iUnion₂.mp ht)
-      let _hp_proofs := Classical.choose_spec (Set.mem_iUnion₂.mp ht)
-      p_data.f t
-    else
-      x₀ -- Arbitrary value for t ∉ I_sup.
-
+    if ht : t ∈ I_sup then (Classical.choose (Set.mem_iUnion₂.mp ht)).f t else x₀
   -- Prove I_sup is an open interval containing t₀
   have I_sup_isOpen : IsOpen I_sup :=
     isOpen_iUnion fun p => isOpen_iUnion fun _ => p.isOpen
   have I_sup_isConnected : IsConnected I_sup := by
-      have hne : I_sup.Nonempty := by
-        obtain ⟨p, hp⟩ := hCne
-        exact ⟨t₀, Set.mem_biUnion hp p.t₀_mem⟩
-      let c : Set (Set ℝ) := LocalODESolution.I '' C
-      have h_common_pt : ∀ s ∈ c, t₀ ∈ s := by
-        rintro s ⟨p, hp, rfl⟩; exact p.t₀_mem
-      have h_preconn : ∀ s ∈ c, IsPreconnected s := by
-        rintro s ⟨p, hp, rfl⟩; exact p.isConnected.isPreconnected
-      have h_preconn_union : IsPreconnected I_sup := by
-          have I_sup_eq_sUnion_c : I_sup = ⋃₀ c := by
-            ext x; simp only [mem_iUnion, exists_prop, mem_sUnion, I_sup];
-            constructor
-            · rintro ⟨p, hp, hx⟩
-              refine ⟨p.I, ?_, hx⟩
-              exact ⟨p, hp, rfl⟩
-            · rintro ⟨s, ⟨p', hp', rfl⟩, hx_in_s⟩; use p'
-          rw [I_sup_eq_sUnion_c]
-          exact isPreconnected_sUnion t₀ c h_common_pt h_preconn
-      exact ⟨hne, h_preconn_union⟩
+    have hne : I_sup.Nonempty := by
+      obtain ⟨p, hp⟩ := hCne
+      exact ⟨t₀, Set.mem_biUnion hp p.t₀_mem⟩
+    let c : Set (Set ℝ) := LocalODESolution.I '' C
+    have h_common_pt : ∀ s ∈ c, t₀ ∈ s := by
+      rintro s ⟨p, hp, rfl⟩; exact p.t₀_mem
+    have h_preconn : ∀ s ∈ c, IsPreconnected s := by
+      rintro s ⟨p, hp, rfl⟩; exact p.isConnected.isPreconnected
+    have h_preconn_union : IsPreconnected I_sup := by
+      have I_sup_eq_sUnion_c : I_sup = ⋃₀ c := by
+        ext x; simp only [mem_iUnion, exists_prop, mem_sUnion, I_sup]
+        constructor
+        · rintro ⟨p, hp, hx⟩
+          refine ⟨p.I, ?_, hx⟩
+          exact ⟨p, hp, rfl⟩
+        · rintro ⟨s, ⟨p', hp', rfl⟩, hx_in_s⟩; use p'
+      rw [I_sup_eq_sUnion_c]
+      exact isPreconnected_sUnion t₀ c h_common_pt h_preconn
+    exact ⟨hne, h_preconn_union⟩
   have I_sup_t₀_mem : t₀ ∈ I_sup := by
     obtain ⟨p, hp⟩ := hCne
     exact Set.mem_iUnion₂.mpr ⟨p, hp, p.t₀_mem⟩
-  -- Prove f_sup is well-defined on I_sup.
-  -- If t ∈ p₁.I and t ∈ p₂.I for p₁, p₂ ∈ C (a chain), then p₁.f(t) = p₂.f(t).
-  -- This relies on C being a chain: either p₁ ≤ p₂ or p₂ ≤ p₁, and in both cases,
-  -- the functions agree on the smaller domain.
-  have f_sup_well_defined : ∀ (t : ℝ) (ht : t ∈ I_sup) (p₁ p₂ : LocalODESolution v t₀ x₀)
-      (hp₁ : p₁ ∈ C) (hp₂ : p₂ ∈ C) (ht₁ : t ∈ p₁.I) (ht₂ : t ∈ p₂.I),
-      p₁.f t = p₂.f t := by
-    intro t ht p₁ p₂ hp₁ hp₂ ht₁ ht₂
-    rcases hC.total hp₁ hp₂ with h12 | h21
-    · exact h12.2 ht₁
-    · symm
-      exact h21.2 ht₂
   -- Prove f_sup satisfies the initial condition
   have f_sup_t₀ : f_sup t₀ = x₀ := by
-      have ht₀_mem : t₀ ∈ I_sup := I_sup_t₀_mem
-      unfold f_sup
-      rw [dif_pos ht₀_mem]
-      let p := Classical.choose (Set.mem_iUnion₂.mp ht₀_mem)
-      exact p.f_t₀
+    simp only [f_sup, dif_pos I_sup_t₀_mem]
+    exact (Classical.choose (Set.mem_iUnion₂.mp I_sup_t₀_mem)).f_t₀
   -- Prove f_sup satisfies the derivative condition on I_sup
   have f_sup_deriv : IsIntegralCurveOn f_sup v I_sup := by
     intro t ht
-    rw [Set.mem_iUnion₂] at ht; rcases ht with ⟨p, hp, htp⟩
+    obtain ⟨p, hp, htp⟩ := Set.mem_iUnion₂.mp ht
     have p_deriv : HasDerivAt p.f (v t (p.f t)) t :=
       (p.deriv t htp).hasDerivAt (p.isOpen.mem_nhds htp)
-    have I_nhds_t : p.I ∈ 𝓝 t := p.isOpen.mem_nhds htp
     have f_sup_eq_pf_eventually : f_sup =ᶠ[𝓝 t] p.f := by
-      filter_upwards [I_nhds_t] with y hy_in_pI
-      have hy_in_I_sup : y ∈ I_sup := by rw [Set.mem_iUnion₂]; exact ⟨p, hp, hy_in_pI⟩
-      simp only [exists_prop, f_sup, I_sup]; rw [dif_pos hy_in_I_sup]
-      let existence_prop_y : ∃ p', p' ∈ C ∧ y ∈ p'.I := by
-        rw [Set.mem_iUnion₂] at hy_in_I_sup; exact bex_def.mp hy_in_I_sup
-      let p'_chosen := Classical.choose existence_prop_y
-      have hp'_chosen_spec : p'_chosen ∈ C ∧ y ∈ p'_chosen.I :=
-        Classical.choose_spec existence_prop_y
-      apply (f_sup_well_defined y hy_in_I_sup p p'_chosen hp
-        hp'_chosen_spec.1 hy_in_pI hp'_chosen_spec.2).symm
-    have h_deriv_f_sup_intermediate : HasDerivAt f_sup (v t (p.f t)) t := by
-      exact HasDerivAt.congr_of_eventuallyEq p_deriv f_sup_eq_pf_eventually
-    have f_sup_eq_pft_at_t : f_sup t = p.f t := by
-      have ht_in_I_sup : t ∈ I_sup := by rw [Set.mem_iUnion₂]; exact ⟨p, hp, htp⟩
-      simp only [exists_prop, f_sup, I_sup]; rw [dif_pos ht_in_I_sup]
-      let existence_prop_t : ∃ p', p' ∈ C ∧ t ∈ p'.I := by
-          rw [Set.mem_iUnion₂] at ht_in_I_sup; exact bex_def.mp ht_in_I_sup
-      let p'_chosen := Classical.choose existence_prop_t
-      have hp'_chosen_spec : p'_chosen ∈ C ∧ t ∈ p'_chosen.I :=
-        Classical.choose_spec existence_prop_t
-      apply (f_sup_well_defined t ht_in_I_sup p p'_chosen hp
-        hp'_chosen_spec.1 htp hp'_chosen_spec.2).symm
-    rw [← f_sup_eq_pft_at_t] at h_deriv_f_sup_intermediate
-    exact h_deriv_f_sup_intermediate.hasDerivWithinAt
-  -- Construct the supremum `LocalODESolution`
-  refine {
-    f := f_sup,
-    I := I_sup,
-    isOpen := I_sup_isOpen,
-    isConnected := I_sup_isConnected,
-    t₀_mem := I_sup_t₀_mem,
-    f_t₀ := f_sup_t₀,
-    deriv := f_sup_deriv
-  }
+      filter_upwards [p.isOpen.mem_nhds htp] with y hy_in_pI
+      have hy_in_I_sup : y ∈ I_sup := Set.mem_iUnion₂.mpr ⟨p, hp, hy_in_pI⟩
+      simp only [f_sup, dif_pos hy_in_I_sup]
+      have spec := Classical.choose_spec (Set.mem_iUnion₂.mp hy_in_I_sup)
+      exact chain_solutions_agree v t₀ x₀ C hC _ p spec.1 hp y spec.2 hy_in_pI
+    have f_sup_eq_pft : f_sup t = p.f t := by
+      simp only [f_sup, dif_pos ht]
+      have spec := Classical.choose_spec (Set.mem_iUnion₂.mp ht)
+      exact chain_solutions_agree v t₀ x₀ C hC _ p spec.1 hp t spec.2 htp
+    rw [f_sup_eq_pft]
+    exact (p_deriv.congr_of_eventuallyEq f_sup_eq_pf_eventually).hasDerivWithinAt
+  exact { f := f_sup, I := I_sup, isOpen := I_sup_isOpen, isConnected := I_sup_isConnected,
+          t₀_mem := I_sup_t₀_mem, f_t₀ := f_sup_t₀, deriv := f_sup_deriv }
 
 open Classical in
 /--
 The `chainSup` construction provides an upper bound for any element `hp` in a non-empty chain `C`.
 -/
 lemma chainSup_is_upper_bound (C : Set (LocalODESolution v t₀ x₀))
-    (hC : IsChain (· ≤ ·) C) (hCne : C.Nonempty) : let p_sup := chainSup v t₀ x₀ C hC hCne
-    ∀ hp ∈ C, hp ≤ p_sup := by
-  intro p_sup hp hpC -- p_sup is the supremum solution; hp is an element from the chain C.
-  constructor
-  · -- Part 1: Prove hp.I ⊆ p_sup.I
-    intro t ht_in_hpI
-    simp only [chainSup, mem_iUnion, p_sup] -- p_sup.I is I_sup
-    use hp
-  · -- Part 2: Prove EqOn hp.f p_sup.f hp.I
-    intro t ht_in_hpI
-    let f_sup := p_sup.f
-    let I_sup := p_sup.I
-    have ht_in_I_sup : t ∈ I_sup := by
-      simp only [chainSup, mem_iUnion, exists_prop, I_sup, p_sup]; use hp
-    have f_sup_eval_eq : f_sup t = (Classical.choose (Set.mem_iUnion₂.mp ht_in_I_sup)).f t := by
-      have f_def : p_sup.f = fun t_ =>
-        if ht' : t_ ∈ I_sup then (Classical.choose (Set.mem_iUnion₂.mp ht')).f t_ else x₀ := rfl
-      simp only [f_sup]; rw [f_def]; exact dif_pos ht_in_I_sup
-    simp only [exists_prop, f_sup] at f_sup_eval_eq; rw [f_sup_eval_eq]
-    let existence_prop_t := Set.mem_iUnion₂.mp ht_in_I_sup
-    let p_chosen_for_t := Classical.choose existence_prop_t
-    have p_chosen_for_t_spec := Classical.choose_spec existence_prop_t
-    have f_sup_well_defined_at_t : ∀ (t' : ℝ) (ht' : t' ∈ I_sup) (p₁ p₂ : LocalODESolution v t₀ x₀)
-        (hp₁ : p₁ ∈ C) (hp₂ : p₂ ∈ C) (ht₁ : t' ∈ p₁.I) (ht₂ : t' ∈ p₂.I),
-        p₁.f t' = p₂.f t' := by -- Copied from chainSup for local access
-      intro t' ht' p₁ p₂ hp₁ hp₂ ht₁ ht₂
-      rcases hC.total hp₁ hp₂ with h12 | h21
-      · exact h12.2 ht₁
-      · exact (h21.2 ht₂).symm
-    have final_eq : hp.f t = p_chosen_for_t.f t :=
-      f_sup_well_defined_at_t t ht_in_I_sup hp p_chosen_for_t hpC
-        p_chosen_for_t_spec.1 ht_in_hpI p_chosen_for_t_spec.2
-    simp only [exists_prop, p_chosen_for_t] at final_eq
-    exact final_eq
+    (hC : IsChain (· ≤ ·) C) (hCne : C.Nonempty) :
+    ∀ hp ∈ C, hp ≤ chainSup v t₀ x₀ C hC hCne := by
+  intro hp hpC
+  refine ⟨fun t ht => Set.mem_iUnion₂.mpr ⟨hp, hpC, ht⟩, fun t ht => ?_⟩
+  have ht_in_I_sup : t ∈ (chainSup v t₀ x₀ C hC hCne).I :=
+    Set.mem_iUnion₂.mpr ⟨hp, hpC, ht⟩
+  have ht_in_I_sup' : t ∈ ⋃ (p : LocalODESolution v t₀ x₀) (hp : p ∈ C), p.I := by
+    simpa [chainSup] using ht_in_I_sup
+  have ht_exists : ∃ i ∈ C, t ∈ i.I := by
+    simpa [Set.mem_iUnion₂] using ht_in_I_sup'
+  have h_eval : (chainSup v t₀ x₀ C hC hCne).f t =
+      (Classical.choose (Set.mem_iUnion₂.mp ht_in_I_sup')).f t := by
+    simp [chainSup, ht_exists]
+  rw [h_eval]
+  have spec := Classical.choose_spec (Set.mem_iUnion₂.mp ht_in_I_sup')
+  exact chain_solutions_agree v t₀ x₀ C hC hp _ hpC spec.1 t ht spec.2
 
 /--
 Helper lemma stating that any non-empty chain `C` has an upper bound.
