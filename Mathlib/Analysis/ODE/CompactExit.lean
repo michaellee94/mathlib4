@@ -222,24 +222,27 @@ theorem uniform_time_of_existence_autonomous_compact_global
 end
 
 /--
-**Right-endpoint compact-exit lemma (abstract extension form).**
+**Right-endpoint compact-exit lemma (abstract extension form, with predicate on compacts).**
 
-Assume a maximal solution `(v, f, I)` has bounded right endpoint and that any time the trajectory
-remains in a compact set near `sSup I`, we can build an extension past `sSup I`.
-Then `(v, f, I)` must eventually leave every compact set as it approaches `sSup I` from the left.
+Assume a maximal solution `(v, f, I)` has bounded right endpoint and that, for every compact set
+`K` satisfying `P`, if the trajectory remains in `K` near `sSup I`, we can build an extension past
+`sSup I`.
+Then `(v, f, I)` must eventually leave every compact set `K` satisfying `P` as it approaches
+`sSup I` from the left.
 -/
-theorem IsMaximalODESolution.leavesEveryCompact_right
+theorem IsMaximalODESolution.leavesEveryCompact_right_of_property
     {v : ℝ → E → E} {f : ℝ → E} {I : Set ℝ}
     (h : IsMaximalODESolution v f I) (hI : BddAbove I)
+    (P : Set E → Prop)
     (h_extend :
-      ∀ K : Set E, IsCompact K → ∀ ε > (0 : ℝ),
+      ∀ K : Set E, IsCompact K → P K → ∀ ε > (0 : ℝ),
         (∀ t ∈ I, sSup I - ε < t → f t ∈ K) →
           ∃ g J,
             IsIntegralCurveOn g v J ∧ IsOpen J ∧ IsConnected J ∧
               I ⊆ J ∧ EqOn f g I ∧ ∃ t, t ∈ J ∧ sSup I < t) :
-    ∀ K : Set E, IsCompact K → ∀ ε > (0 : ℝ),
+    ∀ K : Set E, IsCompact K → P K → ∀ ε > (0 : ℝ),
       ∃ t ∈ I, sSup I - ε < t ∧ t < sSup I ∧ f t ∉ K := by
-  intro K hK ε hε
+  intro K hK hP ε hε
   by_contra hcontra
   have hforall : ∀ t ∈ I, sSup I - ε < t → f t ∈ K := by
     intro t htI ht
@@ -262,7 +265,7 @@ theorem IsMaximalODESolution.leavesEveryCompact_right
         nlinarith [hδpos]
       exact (lt_csSup_iff hI hI_nonempty).2 hlt_witness
     exact hcontra ⟨t, htI, ht, ht_lt, hnot⟩
-  rcases h_extend K hK ε hε hforall with ⟨g, J, hJ, hJopen, hJconn, hIJ, hEq, hsup⟩
+  rcases h_extend K hK hP ε hε hforall with ⟨g, J, hJ, hJopen, hJconn, hIJ, hEq, hsup⟩
   rcases hsup with ⟨t, htJ, ht_sup⟩
   have h_eq : I = J := h.is_maximal g J hJ hJopen hJconn hIJ hEq
   have ht_le : t ≤ sSup I := by
@@ -271,11 +274,97 @@ theorem IsMaximalODESolution.leavesEveryCompact_right
   exact (not_lt_of_ge ht_le) ht_sup
 
 /--
+**Right-endpoint compact-exit lemma (abstract extension form).**
+
+This is a special case of `leavesEveryCompact_right_of_property` with `P := fun _ => True`.
+-/
+theorem IsMaximalODESolution.leavesEveryCompact_right
+    {v : ℝ → E → E} {f : ℝ → E} {I : Set ℝ}
+    (h : IsMaximalODESolution v f I) (hI : BddAbove I)
+    (h_extend :
+      ∀ K : Set E, IsCompact K → ∀ ε > (0 : ℝ),
+        (∀ t ∈ I, sSup I - ε < t → f t ∈ K) →
+          ∃ g J,
+            IsIntegralCurveOn g v J ∧ IsOpen J ∧ IsConnected J ∧
+              I ⊆ J ∧ EqOn f g I ∧ ∃ t, t ∈ J ∧ sSup I < t) :
+    ∀ K : Set E, IsCompact K → ∀ ε > (0 : ℝ),
+      ∃ t ∈ I, sSup I - ε < t ∧ t < sSup I ∧ f t ∉ K := by
+  simpa using
+    (IsMaximalODESolution.leavesEveryCompact_right_of_property
+      (h:=h) hI (P:=fun _ => True)
+      (by
+        intro K hK _ ε hε htraj
+        exact h_extend K hK ε hε htraj))
+
+/--
+**Left-endpoint compact-exit lemma (abstract extension form, with predicate on compacts).**
+
+Assume a maximal solution `(v, f, I)` has bounded left endpoint and that, for every compact set
+`K` satisfying `P`, if the trajectory remains in `K` near `sInf I`, we can build an extension past
+`sInf I` to the left.
+Then `(v, f, I)` must eventually leave every compact set `K` satisfying `P` as it approaches
+`sInf I` from the right.
+-/
+theorem IsMaximalODESolution.leavesEveryCompact_left_of_property
+    {v : ℝ → E → E} {f : ℝ → E} {I : Set ℝ}
+    (h : IsMaximalODESolution v f I) (hI : BddBelow I)
+    (P : Set E → Prop)
+    (h_extend :
+      ∀ K : Set E, IsCompact K → P K → ∀ ε > (0 : ℝ),
+        (∀ t ∈ I, t < sInf I + ε → f t ∈ K) →
+          ∃ g J,
+            IsIntegralCurveOn g v J ∧ IsOpen J ∧ IsConnected J ∧
+              I ⊆ J ∧ EqOn f g I ∧ ∃ t, t ∈ J ∧ t < sInf I) :
+    ∀ K : Set E, IsCompact K → P K → ∀ ε > (0 : ℝ),
+      ∃ t ∈ I, t < sInf I + ε ∧ sInf I < t ∧ f t ∉ K := by
+  intro K hK hP ε hε
+  have hne : I.Nonempty := by
+    by_contra h_empty
+    rw [Set.not_nonempty_iff_eq_empty] at h_empty
+    have h_cond : ∀ t ∈ I, t < sInf I + ε → f t ∈ K := by simp [h_empty]
+    rcases h_extend K hK hP ε hε h_cond with ⟨g, J, hg, hJopen, hJconn, hIJ, hEq, ⟨t, htJ, ht_le⟩⟩
+    have : I = J := h.is_maximal g J hg hJopen hJconn hIJ hEq
+    rw [this.symm, h_empty] at htJ
+    exact htJ
+  have h_rev_bound : sSup (Neg.neg ⁻¹' I) = -sInf I := by
+    apply sSup_preimage_neg hne hI
+  rcases IsMaximalODESolution.leavesEveryCompact_right_of_property
+    (IsMaximalODESolution.comp_neg_iff.mpr h) (BddAbove_preimage_neg hI) P
+    (by
+      intro K' hK' hP' ε' hε' htraj
+      have htraj' : ∀ t ∈ I, t < sInf I + ε' → f t ∈ K' := by
+        intro t htI ht
+        have htI' : -t ∈ Neg.neg ⁻¹' I := by simpa
+        have ht' : sSup (Neg.neg ⁻¹' I) - ε' < -t := by
+          rw [h_rev_bound]
+          linarith
+        have hmem := htraj (-t) htI' ht'
+        simpa [Function.comp] using hmem
+      rcases h_extend K' hK' hP' ε' hε' htraj' with ⟨g, J, hg, hJopen, hJconn, hIJ, hEq, hsup⟩
+      rcases hsup with ⟨t, htJ, ht_inf⟩
+      refine ⟨g ∘ Neg.neg, Neg.neg ⁻¹' J, IsIntegralCurveOn.comp_neg_iff.mpr hg,
+              hJopen.preimage continuous_neg,
+              (((Homeomorph.neg ℝ).isConnected_preimage (s:=J)).2 hJconn),
+              preimage_mono hIJ,
+              (fun t ht => by
+                have ht' : -t ∈ I := by simpa using ht
+                have hEq' : f (-t) = g (-t) := hEq (x:=-t) ht'
+                simpa [Function.comp] using hEq'),
+              ⟨-t, by simpa, by rw [h_rev_bound]; linarith⟩⟩
+    ) K hK hP ε hε
+    with ⟨t, htI, ht_sup, ht_less, ht_not⟩
+  have htI' : -t ∈ I := by simpa using htI
+  refine ⟨-t, htI', ?_, ?_, ?_⟩
+  · rw [h_rev_bound] at ht_sup
+    linarith
+  · rw [h_rev_bound] at ht_less
+    linarith
+  · simpa [Function.comp] using ht_not
+
+/--
 **Left-endpoint compact-exit lemma (abstract extension form).**
 
-Assume a maximal solution `(v, f, I)` has bounded left endpoint and that any time the trajectory
-remains in a compact set near `sInf I`, we can build an extension past `sInf I` to the left.
-Then `(v, f, I)` must eventually leave every compact set as it approaches `sInf I` from the right.
+This is a special case of `leavesEveryCompact_left_of_property` with `P := fun _ => True`.
 -/
 theorem IsMaximalODESolution.leavesEveryCompact_left
     {v : ℝ → E → E} {f : ℝ → E} {I : Set ℝ}
@@ -288,49 +377,154 @@ theorem IsMaximalODESolution.leavesEveryCompact_left
               I ⊆ J ∧ EqOn f g I ∧ ∃ t, t ∈ J ∧ t < sInf I) :
     ∀ K : Set E, IsCompact K → ∀ ε > (0 : ℝ),
       ∃ t ∈ I, t < sInf I + ε ∧ sInf I < t ∧ f t ∉ K := by
-  intro K hK ε hε
-  have hne : I.Nonempty := by
-    by_contra h_empty
-    rw [Set.not_nonempty_iff_eq_empty] at h_empty
-    have h_cond : ∀ t ∈ I, t < sInf I + ε → f t ∈ K := by simp [h_empty]
-    rcases h_extend K hK ε hε h_cond with ⟨g, J, hg, hJopen, hJconn, hIJ, hEq, ⟨t, htJ, ht_le⟩⟩
-    have : I = J := h.is_maximal g J hg hJopen hJconn hIJ hEq
-    rw [this.symm, h_empty] at htJ
-    exact htJ
-  have h_rev_bound : sSup (Neg.neg ⁻¹' I) = -sInf I := by
-    apply sSup_preimage_neg hne hI
-  rcases IsMaximalODESolution.leavesEveryCompact_right
-    (IsMaximalODESolution.comp_neg_iff.mpr h) (BddAbove_preimage_neg hI)
-    (by
-      intro K' hK' ε' hε' htraj
-      have htraj' : ∀ t ∈ I, t < sInf I + ε' → f t ∈ K' := by
-        intro t htI ht
-        have htI' : -t ∈ Neg.neg ⁻¹' I := by simpa
-        have ht' : sSup (Neg.neg ⁻¹' I) - ε' < -t := by
-          rw [h_rev_bound]
-          linarith
-        have hmem := htraj (-t) htI' ht'
-        simpa [Function.comp] using hmem
-      rcases h_extend K' hK' ε' hε' htraj' with ⟨g, J, hg, hJopen, hJconn, hIJ, hEq, hsup⟩
-      rcases hsup with ⟨t, htJ, ht_inf⟩
-      refine ⟨g ∘ Neg.neg, Neg.neg ⁻¹' J, IsIntegralCurveOn.comp_neg_iff.mpr hg,
-              hJopen.preimage continuous_neg,
-              (((Homeomorph.neg ℝ).isConnected_preimage (s:=J)).2 hJconn),
-              preimage_mono hIJ,
-              (fun t ht => by
-                have ht' : -t ∈ I := by simpa using ht
-                have hEq' : f (-t) = g (-t) := hEq (x:=-t) ht'
-                simpa [Function.comp] using hEq'),
-              ⟨-t, by simpa, by rw [h_rev_bound]; linarith⟩⟩
-    ) K hK ε hε
-    with ⟨t, htI, ht_sup, ht_less, ht_not⟩
-  have htI' : -t ∈ I := by simpa using htI
-  refine ⟨-t, htI', ?_, ?_, ?_⟩
-  · rw [h_rev_bound] at ht_sup
-    linarith
-  · rw [h_rev_bound] at ht_less
-    linarith
-  · simpa [Function.comp] using ht_not
+  simpa using
+    (IsMaximalODESolution.leavesEveryCompact_left_of_property
+      (h:=h) hI (P:=fun _ => True)
+      (by
+        intro K hK _ ε hε htraj
+        exact h_extend K hK ε hε htraj))
+
+/--
+**Right-endpoint compact-exit lemma (open-domain localization).**
+
+This is the compact-exit lemma restricted to compact sets contained in a given set `U`.
+-/
+theorem IsMaximalODESolution.leavesEveryCompact_right_subset
+    {v : ℝ → E → E} {f : ℝ → E} {I : Set ℝ} {U : Set E}
+    (h : IsMaximalODESolution v f I) (hI : BddAbove I)
+    (h_extend :
+      ∀ K : Set E, IsCompact K → K ⊆ U → ∀ ε > (0 : ℝ),
+        (∀ t ∈ I, sSup I - ε < t → f t ∈ K) →
+          ∃ g J,
+            IsIntegralCurveOn g v J ∧ IsOpen J ∧ IsConnected J ∧
+              I ⊆ J ∧ EqOn f g I ∧ ∃ t, t ∈ J ∧ sSup I < t) :
+    ∀ K : Set E, IsCompact K → K ⊆ U → ∀ ε > (0 : ℝ),
+      ∃ t ∈ I, sSup I - ε < t ∧ t < sSup I ∧ f t ∉ K := by
+  simpa using
+    (IsMaximalODESolution.leavesEveryCompact_right_of_property
+      (h:=h) hI (P:=fun K => K ⊆ U)
+      (by
+        intro K hK hKU ε hε htraj
+        exact h_extend K hK hKU ε hε htraj))
+
+/--
+**Left-endpoint compact-exit lemma (open-domain localization).**
+
+This is the compact-exit lemma restricted to compact sets contained in a given set `U`.
+-/
+theorem IsMaximalODESolution.leavesEveryCompact_left_subset
+    {v : ℝ → E → E} {f : ℝ → E} {I : Set ℝ} {U : Set E}
+    (h : IsMaximalODESolution v f I) (hI : BddBelow I)
+    (h_extend :
+      ∀ K : Set E, IsCompact K → K ⊆ U → ∀ ε > (0 : ℝ),
+        (∀ t ∈ I, t < sInf I + ε → f t ∈ K) →
+          ∃ g J,
+            IsIntegralCurveOn g v J ∧ IsOpen J ∧ IsConnected J ∧
+              I ⊆ J ∧ EqOn f g I ∧ ∃ t, t ∈ J ∧ t < sInf I) :
+    ∀ K : Set E, IsCompact K → K ⊆ U → ∀ ε > (0 : ℝ),
+      ∃ t ∈ I, t < sInf I + ε ∧ sInf I < t ∧ f t ∉ K := by
+  simpa using
+    (IsMaximalODESolution.leavesEveryCompact_left_of_property
+      (h:=h) hI (P:=fun K => K ⊆ U)
+      (by
+        intro K hK hKU ε hε htraj
+        exact h_extend K hK hKU ε hε htraj))
+
+/--
+**Right-endpoint compact-exit lemma for precompact sets (with predicate on compacts).**
+
+If `closure K` is compact and satisfies `P`, then the compact-exit lemma applies to `K` itself.
+-/
+theorem IsMaximalODESolution.leavesEveryPrecompact_right_of_property
+    {v : ℝ → E → E} {f : ℝ → E} {I : Set ℝ}
+    (h : IsMaximalODESolution v f I) (hI : BddAbove I)
+    (P : Set E → Prop)
+    (h_extend :
+      ∀ K : Set E, IsCompact K → P K → ∀ ε > (0 : ℝ),
+        (∀ t ∈ I, sSup I - ε < t → f t ∈ K) →
+          ∃ g J,
+            IsIntegralCurveOn g v J ∧ IsOpen J ∧ IsConnected J ∧
+              I ⊆ J ∧ EqOn f g I ∧ ∃ t, t ∈ J ∧ sSup I < t) :
+    ∀ K : Set E, IsCompact (closure K) → P (closure K) → ∀ ε > (0 : ℝ),
+      ∃ t ∈ I, sSup I - ε < t ∧ t < sSup I ∧ f t ∉ K := by
+  intro K hK hPK ε hε
+  rcases IsMaximalODESolution.leavesEveryCompact_right_of_property
+      (h:=h) hI P h_extend (K:=closure K) hK hPK ε hε
+    with ⟨t, htI, ht_eps, ht_sup, ht_not⟩
+  refine ⟨t, htI, ht_eps, ht_sup, ?_⟩
+  intro htK
+  exact ht_not (subset_closure htK)
+
+/--
+**Left-endpoint compact-exit lemma for precompact sets (with predicate on compacts).**
+
+If `closure K` is compact and satisfies `P`, then the compact-exit lemma applies to `K` itself.
+-/
+theorem IsMaximalODESolution.leavesEveryPrecompact_left_of_property
+    {v : ℝ → E → E} {f : ℝ → E} {I : Set ℝ}
+    (h : IsMaximalODESolution v f I) (hI : BddBelow I)
+    (P : Set E → Prop)
+    (h_extend :
+      ∀ K : Set E, IsCompact K → P K → ∀ ε > (0 : ℝ),
+        (∀ t ∈ I, t < sInf I + ε → f t ∈ K) →
+          ∃ g J,
+            IsIntegralCurveOn g v J ∧ IsOpen J ∧ IsConnected J ∧
+              I ⊆ J ∧ EqOn f g I ∧ ∃ t, t ∈ J ∧ t < sInf I) :
+    ∀ K : Set E, IsCompact (closure K) → P (closure K) → ∀ ε > (0 : ℝ),
+      ∃ t ∈ I, t < sInf I + ε ∧ sInf I < t ∧ f t ∉ K := by
+  intro K hK hPK ε hε
+  rcases IsMaximalODESolution.leavesEveryCompact_left_of_property
+      (h:=h) hI P h_extend (K:=closure K) hK hPK ε hε
+    with ⟨t, htI, ht_eps, ht_inf, ht_not⟩
+  refine ⟨t, htI, ht_eps, ht_inf, ?_⟩
+  intro htK
+  exact ht_not (subset_closure htK)
+
+/--
+**Right-endpoint compact-exit lemma for precompact sets.**
+
+If `closure K` is compact, then the compact-exit lemma applies to `K` itself.
+-/
+theorem IsMaximalODESolution.leavesEveryPrecompact_right
+    {v : ℝ → E → E} {f : ℝ → E} {I : Set ℝ}
+    (h : IsMaximalODESolution v f I) (hI : BddAbove I)
+    (h_extend :
+      ∀ K : Set E, IsCompact K → ∀ ε > (0 : ℝ),
+        (∀ t ∈ I, sSup I - ε < t → f t ∈ K) →
+          ∃ g J,
+            IsIntegralCurveOn g v J ∧ IsOpen J ∧ IsConnected J ∧
+              I ⊆ J ∧ EqOn f g I ∧ ∃ t, t ∈ J ∧ sSup I < t) :
+    ∀ K : Set E, IsCompact (closure K) → ∀ ε > (0 : ℝ),
+      ∃ t ∈ I, sSup I - ε < t ∧ t < sSup I ∧ f t ∉ K := by
+  simpa using
+    (IsMaximalODESolution.leavesEveryPrecompact_right_of_property
+      (h:=h) hI (P:=fun _ => True)
+      (by
+        intro K hK _ ε hε htraj
+        exact h_extend K hK ε hε htraj))
+
+/--
+**Left-endpoint compact-exit lemma for precompact sets.**
+
+If `closure K` is compact, then the compact-exit lemma applies to `K` itself.
+-/
+theorem IsMaximalODESolution.leavesEveryPrecompact_left
+    {v : ℝ → E → E} {f : ℝ → E} {I : Set ℝ}
+    (h : IsMaximalODESolution v f I) (hI : BddBelow I)
+    (h_extend :
+      ∀ K : Set E, IsCompact K → ∀ ε > (0 : ℝ),
+        (∀ t ∈ I, t < sInf I + ε → f t ∈ K) →
+          ∃ g J,
+            IsIntegralCurveOn g v J ∧ IsOpen J ∧ IsConnected J ∧
+              I ⊆ J ∧ EqOn f g I ∧ ∃ t, t ∈ J ∧ t < sInf I) :
+    ∀ K : Set E, IsCompact (closure K) → ∀ ε > (0 : ℝ),
+      ∃ t ∈ I, t < sInf I + ε ∧ sInf I < t ∧ f t ∉ K := by
+  simpa using
+    (IsMaximalODESolution.leavesEveryPrecompact_left_of_property
+      (h:=h) hI (P:=fun _ => True)
+      (by
+        intro K hK _ ε hε htraj
+        exact h_extend K hK ε hε htraj))
 
 /--
 **Right-endpoint compact-exit lemma (time-dependent, uniform existence hypothesis).**
@@ -646,46 +840,6 @@ theorem IsMaximalODESolution.leavesEveryCompact_right_autonomous_of_contDiffAt
     (h:=h) hI hI_nonempty K hK h_uniform K_const h_lip
 
 /--
-**Global existence criterion (right-unbounded).**
-
-If a maximal autonomous solution with a global $C^1$ vector field stays inside a compact set,
-then its domain cannot be bounded above.
--/
-theorem IsMaximalODESolution.not_bddAbove_of_compact_bound_autonomous_of_contDiffAt
-    [CompleteSpace E]
-    {f : E → E} {φ : ℝ → E} {I : Set ℝ}
-    (h : IsMaximalODESolution (fun _ => f) φ I) (hI_nonempty : I.Nonempty)
-    (K : Set E) (hK : IsCompact K) (hf : ∀ x : E, ContDiffAt ℝ 1 f x)
-    (K_const : NNReal) (h_lip : LipschitzWith K_const f)
-    (htraj : ∀ t ∈ I, φ t ∈ K) :
-    ¬ BddAbove I := by
-  intro hI
-  rcases (IsMaximalODESolution.leavesEveryCompact_right_autonomous_of_contDiffAt
-    (h:=h) hI hI_nonempty K hK hf K_const h_lip) 1 (by norm_num)
-    with ⟨t, htI, _, _, ht_not⟩
-  exact ht_not (htraj t htI)
-
-/--
-**Global existence criterion (left-unbounded).**
-
-If a maximal autonomous solution with a global $C^1$ vector field stays inside a compact set,
-then its domain cannot be bounded below.
--/
-theorem IsMaximalODESolution.not_bddBelow_of_compact_bound_autonomous_of_contDiffAt
-    [CompleteSpace E]
-    {f : E → E} {φ : ℝ → E} {I : Set ℝ}
-    (h : IsMaximalODESolution (fun _ => f) φ I) (hI_nonempty : I.Nonempty)
-    (K : Set E) (hK : IsCompact K) (hf : ∀ x : E, ContDiffAt ℝ 1 f x)
-    (K_const : NNReal) (h_lip : LipschitzWith K_const f)
-    (htraj : ∀ t ∈ I, φ t ∈ K) :
-    ¬ BddBelow I := by
-  intro hI
-  rcases (IsMaximalODESolution.leavesEveryCompact_left_autonomous_of_contDiffAt
-    (h:=h) hI hI_nonempty K hK hf K_const h_lip) 1 (by norm_num)
-    with ⟨t, htI, _, _, ht_not⟩
-  exact ht_not (htraj t htI)
-
-/--
 **Global existence criterion (two-sided unboundedness).**
 
 If a maximal autonomous solution with a global $C^1$ vector field stays inside a compact set,
@@ -700,10 +854,16 @@ theorem IsMaximalODESolution.unbounded_of_compact_bound_autonomous_of_contDiffAt
     (htraj : ∀ t ∈ I, φ t ∈ K) :
     ¬ BddAbove I ∧ ¬ BddBelow I := by
   refine ⟨?_, ?_⟩
-  · exact IsMaximalODESolution.not_bddAbove_of_compact_bound_autonomous_of_contDiffAt
-      (h:=h) hI_nonempty K hK hf K_const h_lip htraj
-  · exact IsMaximalODESolution.not_bddBelow_of_compact_bound_autonomous_of_contDiffAt
-      (h:=h) hI_nonempty K hK hf K_const h_lip htraj
+  · intro hI
+    rcases (IsMaximalODESolution.leavesEveryCompact_right_autonomous_of_contDiffAt
+      (h:=h) hI hI_nonempty K hK hf K_const h_lip) 1 (by norm_num)
+      with ⟨t, htI, _, _, ht_not⟩
+    exact ht_not (htraj t htI)
+  · intro hI
+    rcases (IsMaximalODESolution.leavesEveryCompact_left_autonomous_of_contDiffAt
+      (h:=h) hI hI_nonempty K hK hf K_const h_lip) 1 (by norm_num)
+      with ⟨t, htI, _, _, ht_not⟩
+    exact ht_not (htraj t htI)
 
 /--
 **Finite-time blow-up (right, proper spaces).**
