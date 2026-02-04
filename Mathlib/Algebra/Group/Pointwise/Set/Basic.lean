@@ -213,6 +213,15 @@ theorem Nonempty.inv (h : s.Nonempty) : s⁻¹.Nonempty :=
 theorem image_inv_eq_inv : (·⁻¹) '' s = s⁻¹ :=
   congr_fun (image_eq_preimage_of_inverse inv_involutive.leftInverse inv_involutive.rightInverse) _
 
+@[to_additive]
+theorem preimage_inv_inv_set (s : Set α) : Inv.inv ⁻¹' (Inv.inv ⁻¹' s) = s := by
+  ext x
+  simp
+
+@[to_additive]
+theorem image_inv_eq_preimage_inv_set (s : Set α) : (·⁻¹) '' s = Inv.inv ⁻¹' s := by
+  simp [inv_preimage, image_inv_eq_inv]
+
 @[to_additive (attr := simp)]
 theorem inv_eq_empty : s⁻¹ = ∅ ↔ s = ∅ := by
   rw [← image_inv_eq_inv, image_eq_empty]

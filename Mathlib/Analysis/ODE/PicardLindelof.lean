@@ -748,6 +748,76 @@ theorem exists_forall_mem_closedBall_eq_forall_mem_Icc_hasDerivWithinAt
 
 end IsPicardLindelof
 
+/-! ## Uniform existence on a time strip -/
+
+section
+
+variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [CompleteSpace E]
+
+/--
+**Uniform time of existence on a compact set (time-dependent, from Picard–Lindelöf on a strip).**
+
+Assume that, for every `x ∈ K` and every `t₀ ∈ [tmin, tmax]`, the time-dependent vector field
+`v` satisfies the Picard–Lindelöf hypotheses on the whole strip `Icc tmin tmax`.
+Then, on any smaller strip `Icc tmin' tmax'` with `tmin < tmin'` and `tmax' < tmax`, there exists
+a uniform time window `ε > 0` such that every `x ∈ K` and `t₀ ∈ Icc tmin' tmax'` admits a solution
+defined on `Ioo (t₀ - ε) (t₀ + ε)`.
+-/
+theorem uniform_time_of_existence_time_dependent_compact_on_Icc
+    {v : ℝ → E → E} {K : Set E}
+    {tmin tmax tmin' tmax' : ℝ} (htmin : tmin < tmin') (htmax : tmax' < tmax)
+    (hpl : ∀ x ∈ K, ∀ t₀ : Icc tmin tmax,
+      ∃ a r L Kc : NNReal, IsPicardLindelof v (tmin:=tmin) (tmax:=tmax) t₀ x a r L Kc) :
+    ∃ ε > (0 : ℝ), ∀ x ∈ K, ∀ t₀ ∈ Icc tmin' tmax', ∃ α : ℝ → E,
+      α t₀ = x ∧ ∀ t ∈ Ioo (t₀ - ε) (t₀ + ε), HasDerivAt α (v t (α t)) t := by
+  classical
+  let ε : ℝ := min (tmin' - tmin) (tmax - tmax')
+  have hεpos : 0 < ε := by
+    have h1 : 0 < tmin' - tmin := sub_pos.mpr htmin
+    have h2 : 0 < tmax - tmax' := sub_pos.mpr htmax
+    exact lt_min h1 h2
+  refine ⟨ε, hεpos, ?_⟩
+  intro x hx t₀ ht₀
+  have ht₀' : t₀ ∈ Icc tmin tmax := by
+    have ht₀min' : tmin' ≤ t₀ := ht₀.1
+    have ht₀max' : t₀ ≤ tmax' := ht₀.2
+    have ht₀min : tmin ≤ t₀ := by nlinarith
+    have ht₀max : t₀ ≤ tmax := by nlinarith
+    exact ⟨ht₀min, ht₀max⟩
+  rcases hpl x hx ⟨t₀, ht₀'⟩ with ⟨a, r, L, Kc, hpl_inst⟩
+  have hx_ball : x ∈ closedBall x (r : ℝ) := by
+    have : (0 : ℝ) ≤ (r : ℝ) := by
+      exact r.property
+    exact mem_closedBall_self this
+  rcases
+      IsPicardLindelof.exists_eq_forall_mem_Icc_hasDerivWithinAt
+        (tmin:=tmin) (tmax:=tmax) (t₀:=⟨t₀, ht₀'⟩) (x₀:=x) hpl_inst hx_ball
+    with ⟨α, hαt₀, hα⟩
+  refine ⟨α, hαt₀, ?_⟩
+  intro t ht
+  have hεle1 : ε ≤ tmin' - tmin := min_le_left _ _
+  have hεle2 : ε ≤ tmax - tmax' := min_le_right _ _
+  have htmin : tmin ≤ t := by
+    have ht₀min' : tmin' ≤ t₀ := ht₀.1
+    have h1 : tmin ≤ t₀ - ε := by nlinarith
+    exact le_of_lt (lt_of_le_of_lt h1 ht.1)
+  have htmax : t ≤ tmax := by
+    have ht₀max' : t₀ ≤ tmax' := ht₀.2
+    have h2 : t₀ + ε ≤ tmax := by nlinarith
+    exact le_of_lt (lt_of_lt_of_le ht.2 h2)
+  have htIcc : t ∈ Icc tmin tmax := ⟨htmin, htmax⟩
+  have htmin_lt : tmin < t := lt_of_le_of_lt (by
+    have ht₀min' : tmin' ≤ t₀ := ht₀.1
+    have h1 : tmin ≤ t₀ - ε := by nlinarith
+    exact h1) ht.1
+  have htmax_lt : t < tmax := lt_of_lt_of_le ht.2 (by
+    have ht₀max' : t₀ ≤ tmax' := ht₀.2
+    have h2 : t₀ + ε ≤ tmax := by nlinarith
+    exact h2)
+  exact (hα t htIcc).hasDerivAt (Icc_mem_nhds htmin_lt htmax_lt)
+
+end
+
 /-! ## $C^1$ vector field -/
 
 namespace ContDiffAt

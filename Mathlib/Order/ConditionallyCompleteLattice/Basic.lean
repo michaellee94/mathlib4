@@ -6,6 +6,7 @@ Authors: Sébastien Gouëzel
 module
 
 public import Mathlib.Data.Set.Lattice
+public import Mathlib.Algebra.Order.Group.Defs
 public import Mathlib.Order.ConditionallyCompleteLattice.Defs
 
 /-!
@@ -989,3 +990,42 @@ noncomputable instance WithBot.WithTop.completeLinearOrder {α : Type*}
   __ := linearOrder.toBiheytingAlgebra
 
 end WithTopBot
+
+section Negation
+
+variable {α : Type*} [ConditionallyCompleteLinearOrder α] [OrderedAddCommGroup α]
+  {s : Set α}
+
+theorem sSup_preimage_neg (h : s.Nonempty) (h_bdd : BddBelow s) :
+    sSup (Neg.neg ⁻¹' s) = -sInf s := by
+  classical
+  have hpre_nonempty : (Neg.neg ⁻¹' s).Nonempty := by
+    rcases h with ⟨y, hy⟩
+    refine ⟨-y, ?_⟩
+    simpa using hy
+  refine csSup_eq_of_forall_le_of_forall_lt_exists_gt hpre_nonempty ?_ ?_
+  · intro a ha
+    have ha' : -a ∈ s := ha
+    have hle : sInf s ≤ -a := csInf_le h_bdd ha'
+    have hle' := neg_le_neg hle
+    simpa [neg_neg] using hle'
+  · intro w hw
+    have h' : sInf s < -w := by
+      have := neg_lt_neg hw
+      simpa using this
+    rcases (csInf_lt_iff h_bdd h).1 h' with ⟨y, hy, hy_lt⟩
+    refine ⟨-y, ?_, ?_⟩
+    · simpa using hy
+    · have := neg_lt_neg hy_lt
+      simpa using this
+
+theorem BddAbove_preimage_neg (h : BddBelow s) : BddAbove (Neg.neg ⁻¹' s) := by
+  rcases h with ⟨b, hb⟩
+  use -b
+  intro x hx
+  have hx' : -x ∈ s := hx
+  have hle : b ≤ -x := hb hx'
+  have hle' := neg_le_neg hle
+  simpa [neg_neg] using hle'
+
+end Negation
