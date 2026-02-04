@@ -5,13 +5,13 @@ Authors: Michael Lee
 -/
 module
 
-import Mathlib.Analysis.ODE.Basic
-import Mathlib.Analysis.ODE.Gronwall
-import Mathlib.Analysis.ODE.PicardLindelof
-import Mathlib.Order.Defs.PartialOrder
-import Mathlib.Order.Zorn
-import Mathlib.Topology.Connected.Basic
-import Mathlib.Topology.Instances.Real.Lemmas
+public import Mathlib.Analysis.ODE.Basic
+public import Mathlib.Analysis.ODE.Gronwall
+public import Mathlib.Analysis.ODE.PicardLindelof
+public import Mathlib.Order.Defs.PartialOrder
+public import Mathlib.Order.Zorn
+public import Mathlib.Topology.Connected.Basic
+public import Mathlib.Topology.Instances.Real.Lemmas
 
 /-!
 # Maximal Solutions to Ordinary Differential Equations
@@ -42,6 +42,8 @@ chain together.
 
 * Implement the compact exit lemma ("lemme des bouts").
 -/
+
+@[expose] public section
 
 open Set Filter NNReal Topology TopologicalSpace
 
@@ -359,37 +361,39 @@ theorem IsMaximalODESolution.unique
 
 namespace MaximalSolutionExistence
 
+section
+
 /--
 A local solution to the ODE, consisting of the function, its domain (an open interval),
 and a proof that it satisfies the `IsIntegralCurveOn` predicate.
 
 This structure is auxiliary for the Zorn's Lemma argument and is not intended for public use.
 -/
-structure LocalODESolution (v : ℝ → E → E) (t₀ : ℝ) (x₀ : E) where
+private structure LocalODESolution (v : ℝ → E → E) (t₀ : ℝ) (x₀ : E) where
   /-- The function `f` which locally solves the ODE. -/
-  protected f : ℝ → E
+  f : ℝ → E
   /-- The open interval `I` on which `f` solves the ODE. -/
-  protected I : Set ℝ
-  protected isOpen : IsOpen I
-  protected isConnected : IsConnected I
-  protected t₀_mem : t₀ ∈ I
-  protected f_t₀ : f t₀ = x₀
-  protected deriv : IsIntegralCurveOn f v I
+  I : Set ℝ
+  isOpen : IsOpen I
+  isConnected : IsConnected I
+  t₀_mem : t₀ ∈ I
+  f_t₀ : f t₀ = x₀
+  deriv : IsIntegralCurveOn f v I
 
 /--
 The extension relation `p₁ ≤ p₂` for local ODE solutions `p₁` and `p₂`.
 It means `p₂` is an extension of `p₁`, i.e., the domain of `p₁` is a subset of the domain
 of `p₂`, and the functions agree on the smaller domain `p₁.I`.
 -/
-def ODESolutionExtends (p₁ p₂ : LocalODESolution v t₀ x₀) : Prop :=
+private def ODESolutionExtends (p₁ p₂ : LocalODESolution v t₀ x₀) : Prop :=
   p₁.I ⊆ p₂.I ∧ (EqOn p₁.f p₂.f p₁.I)
 
 -- Define LE instance using the extension relation
-instance : LE (LocalODESolution v t₀ x₀) where
+private instance : LE (LocalODESolution v t₀ x₀) where
   le := ODESolutionExtends v t₀ x₀
 
 -- Now define the Preorder instance. This is sufficient for `zorn_le_nonempty`.
-instance : Preorder (LocalODESolution v t₀ x₀) where
+private instance : Preorder (LocalODESolution v t₀ x₀) where
   le := ODESolutionExtends v t₀ x₀
   le_refl := fun p => by
     constructor
@@ -410,7 +414,7 @@ Two solutions are equivalent if they are extensions of each other, meaning
 they have the same interval and agree on that interval.
 This setoid structure is defined for completeness but not directly used by `zorn_le_nonempty`.
 -/
-instance LocalODESolutionSetoid : Setoid (LocalODESolution v t₀ x₀) where
+private instance LocalODESolutionSetoid : Setoid (LocalODESolution v t₀ x₀) where
   r p₁ p₂ := p₁ ≤ p₂ ∧ p₂ ≤ p₁
   iseqv := {
     refl := fun p => by
@@ -430,9 +434,10 @@ The quotient type of local ODE solutions, where solutions that are extensions
 of each other are identified. This type carries the structure of a partial order.
 This is defined for completeness but not directly used by `zorn_le_nonempty`.
 -/
-abbrev QuotientLocalODESolution := Quotient (LocalODESolutionSetoid (v:=v) (t₀:=t₀) (x₀:=x₀))
+private abbrev QuotientLocalODESolution :=
+  Quotient (LocalODESolutionSetoid (v:=v) (t₀:=t₀) (x₀:=x₀))
 
-instance QuotientLocalODESolution.instLE : LE (QuotientLocalODESolution v t₀ x₀) where
+private instance QuotientLocalODESolution.instLE : LE (QuotientLocalODESolution v t₀ x₀) where
   le := Quotient.lift₂
     (fun p₁ p₂ => p₁ ≤ p₂)
     (by
@@ -457,7 +462,7 @@ The order `⟦p₁⟧ ≤ ⟦p₂⟧` is induced by the preorder relation `p₁ 
 This instance is defined for completeness; `zorn_le_nonempty` operates on the `Preorder`
 of `LocalODESolution` directly.
 -/
-instance : PartialOrder (QuotientLocalODESolution v t₀ x₀) where
+private instance : PartialOrder (QuotientLocalODESolution v t₀ x₀) where
   le := (QuotientLocalODESolution.instLE v t₀ x₀).le
   le_refl := by
     intro q; rcases q with ⟨p⟩; exact le_refl p
@@ -473,7 +478,8 @@ instance : PartialOrder (QuotientLocalODESolution v t₀ x₀) where
 If `C` is a chain of `LocalODESolution`s and `t` is in the domains of two solutions in `C`,
 then those solutions agree at `t`. This is because chains are totally ordered by extension.
 -/
-lemma chain_solutions_agree (C : Set (LocalODESolution v t₀ x₀)) (hC : IsChain (· ≤ ·) C)
+private lemma chain_solutions_agree (C : Set (LocalODESolution v t₀ x₀))
+  (hC : IsChain (· ≤ ·) C)
     (p₁ p₂ : LocalODESolution v t₀ x₀) (hp₁ : p₁ ∈ C) (hp₂ : p₂ ∈ C)
     (t : ℝ) (ht₁ : t ∈ p₁.I) (ht₂ : t ∈ p₂.I) : p₁.f t = p₂.f t := by
   rcases hC.total hp₁ hp₂ with h12 | h21
@@ -485,8 +491,9 @@ open Classical in
 Constructs the supremum of a non-empty chain `C` of `LocalODESolution`s.
 This supremum is itself a `LocalODESolution` and serves as an upper bound for `C`.
 -/
-def chainSup (C : Set (LocalODESolution v t₀ x₀)) (hC : IsChain (· ≤ ·) C) (hCne : C.Nonempty) :
-    LocalODESolution v t₀ x₀ := by
+private def chainSup (C : Set (LocalODESolution v t₀ x₀))
+  (hC : IsChain (· ≤ ·) C) (hCne : C.Nonempty) :
+  LocalODESolution v t₀ x₀ := by
   -- The domain of the supremum solution is the union of the domains of solutions in the chain.
   let I_sup := ⋃ (p : LocalODESolution v t₀ x₀) (hp : p ∈ C), p.I
   -- The function of the supremum solution is defined by "gluing" the functions from the chain.
@@ -549,7 +556,7 @@ open Classical in
 /--
 The `chainSup` construction provides an upper bound for any element `hp` in a non-empty chain `C`.
 -/
-lemma chainSup_is_upper_bound (C : Set (LocalODESolution v t₀ x₀))
+private lemma chainSup_is_upper_bound (C : Set (LocalODESolution v t₀ x₀))
     (hC : IsChain (· ≤ ·) C) (hCne : C.Nonempty) :
     ∀ hp ∈ C, hp ≤ chainSup v t₀ x₀ C hC hCne := by
   intro hp hpC
@@ -571,7 +578,7 @@ lemma chainSup_is_upper_bound (C : Set (LocalODESolution v t₀ x₀))
 Helper lemma stating that any non-empty chain `C` has an upper bound.
 This is equivalent to `BddAbove C`.
 -/
-lemma chain_has_upper_bound_explicit (C : Set (LocalODESolution v t₀ x₀))
+private lemma chain_has_upper_bound_explicit (C : Set (LocalODESolution v t₀ x₀))
     (hC : IsChain (· ≤ ·) C) (hCne : C.Nonempty) : ∃ ub, ∀ p ∈ C, p ≤ ub := by
   use chainSup v t₀ x₀ C hC hCne
   exact chainSup_is_upper_bound v t₀ x₀ C hC hCne
@@ -580,7 +587,7 @@ lemma chain_has_upper_bound_explicit (C : Set (LocalODESolution v t₀ x₀))
 Chains of local ODE solutions are bounded above. This is the condition required by
 `zorn_le_nonempty`.
 -/
-lemma chain_is_bddAbove (C : Set (LocalODESolution v t₀ x₀))
+private lemma chain_is_bddAbove (C : Set (LocalODESolution v t₀ x₀))
     (hC : IsChain (· ≤ ·) C) (hCne : C.Nonempty) : BddAbove C := by
   -- `BddAbove C` means `∃ x, ∀ y ∈ C, y ≤ x`.
   -- This is exactly what `chain_has_upper_bound_explicit` provides.
@@ -637,7 +644,6 @@ theorem exists_maximal_solution
   rcases zorn_le_nonempty (chain_is_bddAbove v t₀ x₀) with
     ⟨maximal_element, h_is_max_elem⟩
     -- `h_is_max_elem` means `∀ (x : S), maximal_element ≤ x → x ≤ maximal_element`.
-
   -- 3. Show this `maximal_element` corresponds to an `IsMaximalODESolution`.
   use maximal_element.f, maximal_element.I
   refine ⟨?_, maximal_element.t₀_mem, maximal_element.f_t₀⟩
@@ -672,6 +678,8 @@ theorem exists_maximal_solution
   have h_I_eq_J : maximal_element.I = J := Set.Subset.antisymm hIJ_subset hJ_subset_I
   -- This contradicts the assumption `h_I_ne_J`.
   exact h_I_ne_J h_I_eq_J
+
+end
 
 end MaximalSolutionExistence
 
