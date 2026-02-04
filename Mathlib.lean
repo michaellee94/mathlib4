@@ -2110,6 +2110,7 @@ public import Mathlib.Analysis.NormedSpace.Real
 public import Mathlib.Analysis.NormedSpace.RieszLemma
 public import Mathlib.Analysis.NormedSpace.SphereNormEquiv
 public import Mathlib.Analysis.ODE.Basic
+public import Mathlib.Analysis.ODE.CompactExit
 public import Mathlib.Analysis.ODE.Gronwall
 public import Mathlib.Analysis.ODE.MaximalSolution
 public import Mathlib.Analysis.ODE.PicardLindelof
