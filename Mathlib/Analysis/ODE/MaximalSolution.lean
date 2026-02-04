@@ -700,6 +700,13 @@ theorem exists_maximal_ode_solution [CompleteSpace E]
     exact ⟨f, I, hmax⟩
 
 open Classical in
+/--
+An arbitrarily chosen maximal solution to the ODE `x' = v(t, x)` through `(t₀, x₀)`, obtained
+by choice from `exists_maximal_ode_solution` under the Picard–Lindelöf hypotheses.
+
+This is a total function `ℝ → E`; it is only guaranteed to satisfy the ODE on the corresponding
+domain `maximalODESolutionDomain`.
+-/
 noncomputable def maximalODESolution [CompleteSpace E]
     (tMin tMax : ℝ) (a r L K : ℝ≥0) (t₀' : Icc tMin tMax)
     (ht₀'_eq : (t₀' : ℝ) = t₀) (htMin_lt_t₀ : tMin < t₀) (ht₀_lt_tMax : t₀ < tMax)
@@ -708,6 +715,13 @@ noncomputable def maximalODESolution [CompleteSpace E]
     ht₀'_eq htMin_lt_t₀ ht₀_lt_tMax hpl_instance)
 
 open Classical in
+/--
+The maximal open connected domain of the chosen maximal solution `maximalODESolution`.
+
+This set is obtained by choice from `exists_maximal_ode_solution` under the Picard–Lindelöf
+hypotheses; it contains `t₀` and on it the function `maximalODESolution` is an integral curve
+of `v` with initial value `x₀`.
+-/
 noncomputable def maximalODESolutionDomain [CompleteSpace E]
     (tMin tMax : ℝ) (a r L K : ℝ≥0) (t₀' : Icc tMin tMax)
     (ht₀'_eq : (t₀' : ℝ) = t₀) (htMin_lt_t₀ : tMin < t₀) (ht₀_lt_tMax : t₀ < tMax)
