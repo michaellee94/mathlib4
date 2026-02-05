@@ -114,6 +114,21 @@ lemma isIntegralCurveOn_comp_mul_ne_zero {a : ℝ} (ha : a ≠ 0) :
   · simp only [mul_comm _ a⁻¹, ← smul_eq_mul, mem_inv_smul_set_iff₀ ha, smul_inv_smul₀ ha,
       setOf_mem_eq]
 
+lemma IsIntegralCurveOn.comp_neg_iff :
+    IsIntegralCurveOn (γ ∘ Neg.neg) (fun t x ↦ - v (-t) x) (Neg.neg ⁻¹' s) ↔
+    IsIntegralCurveOn γ v s := by
+  have hset : ((-1 : ℝ)⁻¹ • s) = (Neg.neg ⁻¹' s) := by
+    ext x
+    constructor
+    · intro hx
+      rcases hx with ⟨y, hy, rfl⟩
+      simpa using hy
+    · intro hx
+      refine ⟨-x, ?_, by simp⟩
+      simpa using hx
+  simpa [hset, Function.comp, mul_neg_one, Pi.smul_apply, neg_one_smul] using
+    (isIntegralCurveOn_comp_mul_ne_zero (γ:=γ) (v:=v) (s:=s) (a:=-1) (by norm_num)).symm
+
 lemma IsIntegralCurveAt.comp_mul_ne_zero (hγ : IsIntegralCurveAt γ v t₀) {a : ℝ} (ha : a ≠ 0) :
     IsIntegralCurveAt (γ ∘ (· * a)) (a • v ∘ (· * a)) (t₀ / a) := by
   rw [isIntegralCurveAt_iff_exists_pos] at *
