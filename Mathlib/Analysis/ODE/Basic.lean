@@ -6,6 +6,7 @@ Authors: Winston Yin
 module
 
 public import Mathlib.Analysis.Calculus.Deriv.Basic
+public import Mathlib.Analysis.Calculus.Deriv.Prod
 
 /-!
 # Integral curves of vector fields on a normed vector space
@@ -130,3 +131,39 @@ lemma IsIntegralCurveAt.continuousAt (hγ : IsIntegralCurveAt γ v t₀) :
 
 lemma IsIntegralCurve.continuous (hγ : IsIntegralCurve γ v) : Continuous γ :=
   continuous_iff_continuousAt.mpr (hγ.isIntegralCurveAt · |>.continuousAt)
+
+/-! ### Autonomization: Converting time-dependent ODEs to autonomous form
+
+A time-dependent ODE `x' = v(t, x)` can be converted to an autonomous system on the extended
+phase space `E × ℝ` by treating time as a state variable:
+```
+(x, τ)' = (v(τ, x), 1)
+```
+This section provides lemmas for converting integral curves between these formulations.
+-/
+
+/-- Convert a time-dependent integral curve to an autonomous one on the extended space `E × ℝ`.
+The extended curve is `t ↦ (γ t, t)` and the extended vector field is `(x, τ) ↦ (v τ x, 1)`. -/
+lemma IsIntegralCurveOn.toExtended (h : IsIntegralCurveOn γ v s) :
+    IsIntegralCurveOn (fun t => (γ t, t)) (fun _ p => (v p.2 p.1, (1 : ℝ))) s := by
+  intro t ht
+  exact (h t ht).prodMk (hasDerivWithinAt_id t s)
+
+/-- Convert a time-dependent integral curve to an autonomous one (global version). -/
+lemma IsIntegralCurve.toExtended (h : IsIntegralCurve γ v) :
+    IsIntegralCurve (fun t => (γ t, t)) (fun _ p => (v p.2 p.1, (1 : ℝ))) := by
+  intro t
+  exact (h t).prodMk (hasDerivAt_id t)
+
+/-- The first component of an extended integral curve is an integral curve of the original
+time-dependent system, provided the second component derivative is 1 and equals `v`. -/
+lemma IsIntegralCurveOn.ofExtended_fst {Γ : ℝ → E × ℝ}
+    (h : IsIntegralCurveOn Γ (fun _ p => (v p.2 p.1, (1 : ℝ))) s)
+    (hΓ_snd : ∀ t ∈ s, (Γ t).2 = t) :
+    IsIntegralCurveOn (fun t => (Γ t).1) v s := by
+  intro t ht
+  have hΓ := h t ht
+  have h_fst : HasDerivWithinAt (fun τ => (Γ τ).1) (v (Γ t).2 (Γ t).1) s t :=
+    hΓ.fst
+  simp only [hΓ_snd t ht] at h_fst
+  exact h_fst
