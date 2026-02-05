@@ -151,6 +151,35 @@ def jetBundleCore
 
 /-! ## Topological Structure -/
 
+/--
+Typeclass packaging the cocycle and continuity properties needed to build the jet bundle core.
+This is the missing analytic input required to define the correct topology.
+-/
+class JetBundleCore : Prop where
+  coordChange_self :
+    ∀ i, ∀ x ∈ baseSet (H := H) (M := M) (H' := H') (M' := M') i, ∀ v,
+      coordChange (I := I) (I' := I') (H := H) (M := M) (H' := H') (M' := M') (r := r)
+        i i x v = v
+  continuousOn_coordChange :
+    ∀ i j,
+      ContinuousOn
+        (fun p : (M × M') × Jet 𝕜 E E' r =>
+          coordChange (I := I) (I' := I') (H := H) (M := M) (H' := H') (M' := M') (r := r)
+            i j p.1 p.2)
+        ((baseSet (H := H) (M := M) (H' := H') (M' := M') i ∩
+            baseSet (H := H) (M := M) (H' := H') (M' := M') j) ×ˢ univ)
+  coordChange_comp :
+    ∀ i j k, ∀ x ∈ baseSet (H := H) (M := M) (H' := H') (M' := M') i ∩
+        baseSet (H := H) (M := M) (H' := H') (M' := M') j ∩
+        baseSet (H := H) (M := M) (H' := H') (M' := M') k,
+      ∀ v,
+        (coordChange (I := I) (I' := I') (H := H) (M := M) (H' := H') (M' := M') (r := r)
+            j k x)
+          (coordChange (I := I) (I' := I') (H := H) (M := M) (H' := H') (M' := M') (r := r)
+            i j x v) =
+          coordChange (I := I) (I' := I') (H := H) (M := M) (H' := H') (M' := M') (r := r)
+            i k x v
+
 /-- Auxiliary equivalence between the jet bundle and the product
 `M × (M' × J^r(E, E'))`. -/
 def equivProd : JetBundle I I' M M' r ≃ M × (M' × Jet 𝕜 E E' r) where
@@ -159,49 +188,19 @@ def equivProd : JetBundle I I' M M' r ≃ M × (M' × Jet 𝕜 E E' r) where
   left_inv _ := rfl
   right_inv _ := rfl
 
-/-- The topology on the jet bundle is induced by the local charts.
-For now, we define it via the `ChartedSpace` structure which we will construct.
-However, since `JetBundle` is defined as a sigma type, we can put the sigma topology on it?
-No, we want the "twisted" topology.
-
-Ideally we would use `FiberBundleCore` or `VectorBundleCore`.
-Given we haven't defined the transition functions yet, we will postulate the existence
-of the structure for now to unblock the definition of Differential Relations.
--/
-instance instTopologicalSpace : TopologicalSpace (JetBundle I I' M M' r) :=
-  let _ : TopologicalSpace (Jet 𝕜 E E' r) := Jet.instTopologicalSpace
-  TopologicalSpace.induced (equivProd (I := I) (I' := I') (M := M) (M' := M') (r := r))
-    (inferInstance : TopologicalSpace (M × (M' × Jet 𝕜 E E' r)))
-
-/-- The jet bundle is (noncanonically) homeomorphic to the product
-`M × (M' × J^r(E, E'))` with the induced topology. -/
-def homeomorphProd : JetBundle I I' M M' r ≃ₜ M × (M' × Jet 𝕜 E E' r) where
-  toEquiv := equivProd (I := I) (I' := I') (M := M) (M' := M') (r := r)
-  continuous_toFun := continuous_induced_dom
-  continuous_invFun := by
-    refine continuous_induced_rng.2 ?_
-    simpa using (continuous_id : Continuous fun p : M × (M' × Jet 𝕜 E E' r) => p)
-
-/-! ## Manifold Structure -/
-
-/-- The charted space instance for the jet bundle.
-This makes `JetBundle` a manifold modeled on `E × E' × Jet 𝕜 E E' r`. -/
-instance instChartedSpace : ChartedSpace (ModelSpace I I' r) (JetBundle I I' M M' r) := by
+instance instTopologicalSpace [JetBundleCore (I := I) (I' := I') (M := M) (M' := M') (r := r)] :
+    TopologicalSpace (JetBundle I I' M M' r) := by
   classical
-  let P := M × (M' × Jet 𝕜 E E' r)
-  let e : JetBundle I I' M M' r ≃ₜ P :=
-    homeomorphProd (I := I) (I' := I') (M := M) (M' := M') (r := r)
-  letI : ChartedSpace (ModelSpace I I' r) P := by
-    infer_instance
-  letI : ChartedSpace P (JetBundle I I' M M' r) :=
-  { atlas := {e.toOpenPartialHomeomorph}
-    chartAt := fun _ => e.toOpenPartialHomeomorph
-    mem_chart_source := by simp
-    chart_mem_atlas := by simp }
-  simpa [ModelSpace, P] using
-    (ChartedSpace.comp (H := ModelSpace I I' r) (H' := P)
-      (M := JetBundle I I' M M' r))
+  let core := jetBundleCore (I := I) (I' := I') (M := M) (M' := M') (r := r)
+    (coordChange_self := JetBundleCore.coordChange_self (I := I) (I' := I') (M := M)
+      (M' := M') (r := r))
+    (continuousOn_coordChange := JetBundleCore.continuousOn_coordChange (I := I) (I' := I')
+      (M := M) (M' := M') (r := r))
+    (coordChange_comp := JetBundleCore.coordChange_comp (I := I) (I' := I') (M := M)
+      (M' := M') (r := r))
+  simpa using (FiberBundleCore.toTopologicalSpace (Z := core))
 
--- TODO: Define a genuine smooth structure once chart transition smoothness is available.
+-- TODO: Once `JetBundleCore` is proved, define the corresponding charted space and
+-- `IsManifold` instances from the resulting fiber bundle structure.
 
 end JetBundle
