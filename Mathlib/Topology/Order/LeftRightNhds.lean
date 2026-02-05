@@ -78,6 +78,30 @@ theorem nhdsGT_basis_of_exists_gt {a : α} (h : ∃ b, a < b) : (𝓝[>] a).HasB
 lemma nhdsGT_basis [NoMaxOrder α] (a : α) : (𝓝[>] a).HasBasis (a < ·) (Ioo a) :=
   nhdsGT_basis_of_exists_gt <| exists_gt a
 
+theorem eventually_nhdsGT_iff [NoMaxOrder α] {a : α} {p : α → Prop} :
+    (∀ᶠ t in 𝓝[>] a, p t) ↔ ∃ u, a < u ∧ ∀ t, a < t ∧ t < u → p t := by
+  refine (nhdsGT_basis a).eventually_iff.trans ?_
+  constructor
+  · rintro ⟨u, hau, h⟩
+    refine ⟨u, hau, ?_⟩
+    intro t ht
+    exact h ⟨ht.1, ht.2⟩
+  · rintro ⟨u, hau, h⟩
+    refine ⟨u, hau, ?_⟩
+    intro t ht
+    exact h t ht
+
+theorem frequently_nhdsGT_iff [NoMaxOrder α] {a : α} {p : α → Prop} :
+    (∃ᶠ t in 𝓝[>] a, p t) ↔ ∀ u, a < u → ∃ t, a < t ∧ t < u ∧ p t := by
+  refine (nhdsGT_basis a).frequently_iff.trans ?_
+  constructor
+  · intro h u hu
+    rcases h u hu with ⟨t, ht, hp⟩
+    exact ⟨t, ht.1, ht.2, hp⟩
+  · intro h u hu
+    rcases h u hu with ⟨t, ht1, ht2, hp⟩
+    exact ⟨t, ⟨ht1, ht2⟩, hp⟩
+
 theorem nhdsGT_eq_bot_iff {a : α} : 𝓝[>] a = ⊥ ↔ IsTop a ∨ ∃ b, a ⋖ b := by
   by_cases ha : IsTop a
   · simp [ha, ha.isMax.Ioi_eq]
@@ -209,6 +233,30 @@ theorem nhdsLT_basis_of_exists_lt {a : α} (h : ∃ b, b < a) : (𝓝[<] a).HasB
 
 theorem nhdsLT_basis [NoMinOrder α] (a : α) : (𝓝[<] a).HasBasis (· < a) (Ioo · a) :=
   nhdsLT_basis_of_exists_lt <| exists_lt a
+
+theorem eventually_nhdsLT_iff [NoMinOrder α] {a : α} {p : α → Prop} :
+    (∀ᶠ t in 𝓝[<] a, p t) ↔ ∃ l, l < a ∧ ∀ t, l < t ∧ t < a → p t := by
+  refine (nhdsLT_basis a).eventually_iff.trans ?_
+  constructor
+  · rintro ⟨l, hla, h⟩
+    refine ⟨l, hla, ?_⟩
+    intro t ht
+    exact h ⟨ht.1, ht.2⟩
+  · rintro ⟨l, hla, h⟩
+    refine ⟨l, hla, ?_⟩
+    intro t ht
+    exact h t ht
+
+theorem frequently_nhdsLT_iff [NoMinOrder α] {a : α} {p : α → Prop} :
+    (∃ᶠ t in 𝓝[<] a, p t) ↔ ∀ l, l < a → ∃ t, l < t ∧ t < a ∧ p t := by
+  refine (nhdsLT_basis a).frequently_iff.trans ?_
+  constructor
+  · intro h l hl
+    rcases h l hl with ⟨t, ht, hp⟩
+    exact ⟨t, ht.1, ht.2, hp⟩
+  · intro h l hl
+    rcases h l hl with ⟨t, ht1, ht2, hp⟩
+    exact ⟨t, ⟨ht1, ht2⟩, hp⟩
 
 theorem nhdsLT_eq_bot_iff {a : α} : 𝓝[<] a = ⊥ ↔ IsBot a ∨ ∃ b, b ⋖ a := by
   convert (config := { preTransparency := .default }) nhdsGT_eq_bot_iff (a := OrderDual.toDual a)
