@@ -10,6 +10,7 @@ public import Mathlib.Analysis.Calculus.ContDiff.RCLike
 public import Mathlib.Algebra.Order.Group.Bounds
 public import Mathlib.Analysis.ODE.MaximalSolution
 public import Mathlib.Analysis.ODE.PicardLindelof
+public import Mathlib.Analysis.ODE.Gronwall
 public import Mathlib.Analysis.ODE.Transform
 public import Mathlib.Topology.Order.LeftRightNhds
 public import Mathlib.Topology.MetricSpace.ProperSpace
@@ -18,27 +19,37 @@ public import Mathlib.Topology.MetricSpace.ProperSpace
 # Compact-exit lemma ("lemme des bouts")
 
 This module provides formal versions of the compact-exit lemma for maximal ODE solutions.
-A maximal solution is frequently outside every compact set as it approaches the boundary of its
-domain. In this file, “approaches the right endpoint” and “approaches the left endpoint” are
-expressed using neighborhood-within filters `𝓝[<] sSup I` and `𝓝[>] sInf I`.
+Roughly speaking, a maximal solution cannot remain in a fixed compact set as it approaches a
+finite endpoint of its domain.
+
+In this file, “approaches the right endpoint” and “approaches the left endpoint” are expressed
+using neighborhood-within filters `𝓝[<] sSup I` and `𝓝[>] sInf I`.
+The main statements are phrased in an *eventual* form along these filters, e.g.
+`∀ᶠ t in 𝓝[<] sSup I, t ∈ I → φ t ∉ K`.
 
 The key results are:
-- `IsMaximalODESolution.leavesEveryCompact_right_autonomous_eventually`: autonomous case, assuming
-  uniform time-of-existence on compacts
-- `IsMaximalODESolution.leavesEveryCompact_left_autonomous_eventually`: autonomous left-endpoint
-  analog
 - `IsMaximalODESolution.leavesEveryCompact_right_time_dependent_eventually`: time-dependent case
   with uniform existence hypotheses
 - `IsMaximalODESolution.leavesEveryCompact_left_time_dependent_eventually`: time-dependent
   left-endpoint analog
+- `IsMaximalODESolution.leavesEveryCompact_right_autonomous_eventually`: autonomous case, assuming
+  uniform time-of-existence on compacts
+- `IsMaximalODESolution.leavesEveryCompact_left_autonomous_eventually`: autonomous left-endpoint
+  analog
 - `IsMaximalODESolution.`
   `leavesEveryCompact_right_time_dependent_of_IsPicardLindelof_on_Icc_eventually`:
   time-dependent case with Picard–Lindelöf hypotheses on a time strip
 - `IsMaximalODESolution.`
   `leavesEveryCompact_left_time_dependent_of_IsPicardLindelof_on_Icc_eventually`:
   left-endpoint analog on a time strip
+- `IsMaximalODESolution.leavesEveryCompact_right_autonomous_of_contDiffAt`: autonomous case with a
+  global $C^1$ vector field
+- `IsMaximalODESolution.leavesEveryCompact_left_autonomous_of_contDiffAt`: left-endpoint analog
 - `IsMaximalODESolution.unbounded_of_compact_bound_autonomous_of_contDiffAt`: global-existence
   criterion from a compact bound on the trajectory
+- `IsMaximalODESolution.global_existence_of_linear_growth`: global existence from linear growth via
+  Grönwall plus compact-exit
+- `IsMaximalODESolution.not_bddAbove_of_trapped`: trapping/invariance corollary in proper spaces
 
 We also provide autonomous uniform time-of-existence theorems.
 For the time-dependent uniform existence input on a strip, see
@@ -219,239 +230,6 @@ theorem uniform_time_of_existence_autonomous_compact_global
 end
 
 /--
-**Right-endpoint compact-exit lemma (abstract extension form, with predicate on compacts).**
-
-Assume a maximal solution `(v, f, I)` has bounded right endpoint and that, for every compact set
-`K` satisfying `P`, if the trajectory remains in `K` near `sSup I`, we can build an extension past
-`sSup I`.
-Then `(v, f, I)` must frequently leave every compact set `K` satisfying `P` as it approaches
-`sSup I` from the left, i.e. `∃ᶠ t in 𝓝[<] sSup I, t ∈ I ∧ f t ∉ K`.
--/
-theorem IsMaximalODESolution.leavesEveryCompact_right_of_property
-    {v : ℝ → E → E} {f : ℝ → E} {I : Set ℝ}
-    (h : IsMaximalODESolution v f I) (hI : BddAbove I)
-    (P : Set E → Prop)
-    (h_extend :
-      ∀ K : Set E, IsCompact K → P K → ∀ ε > (0 : ℝ),
-        (∀ t ∈ I, sSup I - ε < t → f t ∈ K) →
-          ∃ g J,
-            IsIntegralCurveOn g v J ∧ IsOpen J ∧ IsConnected J ∧
-              I ⊆ J ∧ EqOn f g I ∧ ∃ t, t ∈ J ∧ sSup I < t) :
-    ∀ K : Set E, IsCompact K → P K →
-      ∃ᶠ t in 𝓝[<] sSup I, t ∈ I ∧ f t ∉ K := by
-  intro K hK hP
-  refine (frequently_nhdsLT_iff (a:=sSup I) (p:=fun t => t ∈ I ∧ f t ∉ K)).2 ?_
-  intro l hl
-  set ε : ℝ := sSup I - l
-  have hε : 0 < ε := by
-    dsimp [ε]
-    linarith
-  by_contra hcontra
-  have hforall : ∀ t ∈ I, sSup I - ε < t → f t ∈ K := by
-    intro t htI ht
-    by_contra hnot
-    have ht_lt : t < sSup I := by
-      have hI_nonempty : I.Nonempty := ⟨t, htI⟩
-      have hnhds : I ∈ 𝓝 t := h.isOpen.mem_nhds htI
-      rcases Metric.mem_nhds_iff.mp hnhds with ⟨δ, hδpos, hball⟩
-      have hhalf : 0 < δ / 2 := by nlinarith [hδpos]
-      have ht_in_ball : t + δ / 2 ∈ Metric.ball t δ := by
-        have hhalf_lt : δ / 2 < δ := by nlinarith [hδpos]
-        have hdist_lt : dist (t + δ / 2) t < δ := by
-          have h_abs : |δ| / 2 < δ := by
-            simpa [abs_of_pos hδpos] using hhalf_lt
-          simpa [Real.dist_eq, sub_eq_add_neg, add_comm, add_left_comm, add_assoc] using h_abs
-        exact hdist_lt
-      have ht_in_I : t + δ / 2 ∈ I := hball ht_in_ball
-      have hlt_witness : ∃ b ∈ I, t < b := by
-        refine ⟨t + δ / 2, ht_in_I, ?_⟩
-        nlinarith [hδpos]
-      exact (lt_csSup_iff hI hI_nonempty).2 hlt_witness
-    have hl_t : l < t := by
-      have ht' : sSup I - (sSup I - l) < t := by
-        simpa [ε] using ht
-      linarith
-    exact hcontra ⟨t, hl_t, ht_lt, ⟨htI, hnot⟩⟩
-  rcases h_extend K hK hP ε hε hforall with ⟨g, J, hJ, hJopen, hJconn, hIJ, hEq, hsup⟩
-  rcases hsup with ⟨t, htJ, ht_sup⟩
-  have h_eq : I = J := h.is_maximal g J hJ hJopen hJconn hIJ hEq
-  have ht_le : t ≤ sSup I := by
-    have : t ∈ I := by simpa [h_eq] using htJ
-    exact le_csSup hI this
-  exact (not_lt_of_ge ht_le) ht_sup
-
-/--
-**Right-endpoint compact-exit lemma (abstract extension form).**
-
-This is a special case of `leavesEveryCompact_right_of_property` with `P := fun _ => True`.
--/
-theorem IsMaximalODESolution.leavesEveryCompact_right
-    {v : ℝ → E → E} {f : ℝ → E} {I : Set ℝ}
-    (h : IsMaximalODESolution v f I) (hI : BddAbove I)
-    (h_extend :
-      ∀ K : Set E, IsCompact K → ∀ ε > (0 : ℝ),
-        (∀ t ∈ I, sSup I - ε < t → f t ∈ K) →
-          ∃ g J,
-            IsIntegralCurveOn g v J ∧ IsOpen J ∧ IsConnected J ∧
-              I ⊆ J ∧ EqOn f g I ∧ ∃ t, t ∈ J ∧ sSup I < t) :
-    ∀ K : Set E, IsCompact K →
-      ∃ᶠ t in 𝓝[<] sSup I, t ∈ I ∧ f t ∉ K := by
-  simpa using
-    (IsMaximalODESolution.leavesEveryCompact_right_of_property
-      (h:=h) hI (P:=fun _ => True)
-      (by
-        intro K hK _ ε hε htraj
-        exact h_extend K hK ε hε htraj))
-
-/--
-**Left-endpoint compact-exit lemma (abstract extension form, with predicate on compacts).**
-
-Assume a maximal solution `(v, f, I)` has bounded left endpoint and that, for every compact set
-`K` satisfying `P`, if the trajectory remains in `K` near `sInf I`, we can build an extension past
-`sInf I` to the left.
-Then `(v, f, I)` must frequently leave every compact set `K` satisfying `P` as it approaches
-`sInf I` from the right, i.e. `∃ᶠ t in 𝓝[>] sInf I, t ∈ I ∧ f t ∉ K`.
--/
-theorem IsMaximalODESolution.leavesEveryCompact_left_of_property
-    {v : ℝ → E → E} {f : ℝ → E} {I : Set ℝ}
-    (h : IsMaximalODESolution v f I) (hI : BddBelow I)
-    (P : Set E → Prop)
-    (h_extend :
-      ∀ K : Set E, IsCompact K → P K → ∀ ε > (0 : ℝ),
-        (∀ t ∈ I, t < sInf I + ε → f t ∈ K) →
-          ∃ g J,
-            IsIntegralCurveOn g v J ∧ IsOpen J ∧ IsConnected J ∧
-              I ⊆ J ∧ EqOn f g I ∧ ∃ t, t ∈ J ∧ t < sInf I) :
-    ∀ K : Set E, IsCompact K → P K →
-      ∃ᶠ t in 𝓝[>] sInf I, t ∈ I ∧ f t ∉ K := by
-  intro K hK hP
-  refine (frequently_nhdsGT_iff (a:=sInf I) (p:=fun t => t ∈ I ∧ f t ∉ K)).2 ?_
-  intro u hu
-  have hne : I.Nonempty := by
-    by_contra h_empty
-    rw [Set.not_nonempty_iff_eq_empty] at h_empty
-    have h_cond : ∀ t ∈ I, t < sInf I + (u - sInf I) → f t ∈ K := by simp [h_empty]
-    have hε : 0 < u - sInf I := by linarith
-    rcases h_extend K hK hP (u - sInf I) hε h_cond with
-      ⟨g, J, hg, hJopen, hJconn, hIJ, hEq, ⟨t, htJ, ht_le⟩⟩
-    have : I = J := h.is_maximal g J hg hJopen hJconn hIJ hEq
-    rw [this.symm, h_empty] at htJ
-    exact htJ
-  have h_rev_bound : sSup (Neg.neg ⁻¹' I) = -sInf I := by
-    apply sSup_preimage_neg hne hI
-  have hfreq_rev :
-      ∃ᶠ t in 𝓝[<] sSup (Neg.neg ⁻¹' I), t ∈ Neg.neg ⁻¹' I ∧ (f ∘ Neg.neg) t ∉ K :=
-    IsMaximalODESolution.leavesEveryCompact_right_of_property
-      (IsMaximalODESolution.comp_neg_iff.mpr h) (BddAbove_preimage_neg hI) P
-      (by
-        intro K' hK' hP' ε' hε' htraj
-        have htraj' : ∀ t ∈ I, t < sInf I + ε' → f t ∈ K' := by
-          intro t htI ht
-          have htI' : -t ∈ Neg.neg ⁻¹' I := by simpa
-          have ht' : sSup (Neg.neg ⁻¹' I) - ε' < -t := by
-            rw [h_rev_bound]
-            linarith
-          have hmem := htraj (-t) htI' ht'
-          simpa [Function.comp] using hmem
-        rcases h_extend K' hK' hP' ε' hε' htraj' with ⟨g, J, hg, hJopen, hJconn, hIJ, hEq, hsup⟩
-        rcases hsup with ⟨t, htJ, ht_inf⟩
-        refine ⟨g ∘ Neg.neg, Neg.neg ⁻¹' J, IsIntegralCurveOn.comp_neg_iff.mpr hg,
-                hJopen.preimage continuous_neg,
-                (((Homeomorph.neg ℝ).isConnected_preimage (s:=J)).2 hJconn),
-                preimage_mono hIJ,
-                (fun t ht => by
-                  have ht' : -t ∈ I := by simpa using ht
-                  have hEq' : f (-t) = g (-t) := hEq (x:=-t) ht'
-                  simpa [Function.comp] using hEq'),
-                ⟨-t, by simpa, by rw [h_rev_bound]; linarith⟩⟩
-      ) K hK hP
-  have hlt_rev : ∀ l < sSup (Neg.neg ⁻¹' I), ∃ t,
-      l < t ∧ t < sSup (Neg.neg ⁻¹' I) ∧
-        (t ∈ Neg.neg ⁻¹' I ∧ (f ∘ Neg.neg) t ∉ K) :=
-    (frequently_nhdsLT_iff (a:=sSup (Neg.neg ⁻¹' I))
-      (p:=fun t => t ∈ Neg.neg ⁻¹' I ∧ (f ∘ Neg.neg) t ∉ K)).1 hfreq_rev
-  have hl : -u < sSup (Neg.neg ⁻¹' I) := by
-    rw [h_rev_bound]
-    linarith
-  rcases hlt_rev (-u) hl with ⟨t, ht_left, ht_right, htP⟩
-  rcases htP with ⟨htI, ht_not⟩
-  have htI' : -t ∈ I := by simpa using htI
-  refine ⟨-t, ?_, ?_, ?_⟩
-  · rw [h_rev_bound] at ht_right
-    linarith
-  · linarith
-  · exact ⟨htI', by simpa [Function.comp] using ht_not⟩
-
-/--
-**Left-endpoint compact-exit lemma (abstract extension form).**
-
-This is a special case of `leavesEveryCompact_left_of_property` with `P := fun _ => True`.
--/
-theorem IsMaximalODESolution.leavesEveryCompact_left
-    {v : ℝ → E → E} {f : ℝ → E} {I : Set ℝ}
-    (h : IsMaximalODESolution v f I) (hI : BddBelow I)
-    (h_extend :
-      ∀ K : Set E, IsCompact K → ∀ ε > (0 : ℝ),
-        (∀ t ∈ I, t < sInf I + ε → f t ∈ K) →
-          ∃ g J,
-            IsIntegralCurveOn g v J ∧ IsOpen J ∧ IsConnected J ∧
-              I ⊆ J ∧ EqOn f g I ∧ ∃ t, t ∈ J ∧ t < sInf I) :
-    ∀ K : Set E, IsCompact K →
-      ∃ᶠ t in 𝓝[>] sInf I, t ∈ I ∧ f t ∉ K := by
-  simpa using
-    (IsMaximalODESolution.leavesEveryCompact_left_of_property
-      (h:=h) hI (P:=fun _ => True)
-      (by
-        intro K hK _ ε hε htraj
-        exact h_extend K hK ε hε htraj))
-
-/--
-**Right-endpoint compact-exit lemma (open-domain localization).**
-
-This is the compact-exit lemma restricted to compact sets contained in a given set `U`.
--/
-theorem IsMaximalODESolution.leavesEveryCompact_right_subset
-    {v : ℝ → E → E} {f : ℝ → E} {I : Set ℝ} {U : Set E}
-    (h : IsMaximalODESolution v f I) (hI : BddAbove I)
-    (h_extend :
-      ∀ K : Set E, IsCompact K → K ⊆ U → ∀ ε > (0 : ℝ),
-        (∀ t ∈ I, sSup I - ε < t → f t ∈ K) →
-          ∃ g J,
-            IsIntegralCurveOn g v J ∧ IsOpen J ∧ IsConnected J ∧
-              I ⊆ J ∧ EqOn f g I ∧ ∃ t, t ∈ J ∧ sSup I < t) :
-    ∀ K : Set E, IsCompact K → K ⊆ U →
-      ∃ᶠ t in 𝓝[<] sSup I, t ∈ I ∧ f t ∉ K := by
-  simpa using
-    (IsMaximalODESolution.leavesEveryCompact_right_of_property
-      (h:=h) hI (P:=fun K => K ⊆ U)
-      (by
-        intro K hK hKU ε hε htraj
-        exact h_extend K hK hKU ε hε htraj))
-
-/--
-**Left-endpoint compact-exit lemma (open-domain localization).**
-
-This is the compact-exit lemma restricted to compact sets contained in a given set `U`.
--/
-theorem IsMaximalODESolution.leavesEveryCompact_left_subset
-    {v : ℝ → E → E} {f : ℝ → E} {I : Set ℝ} {U : Set E}
-    (h : IsMaximalODESolution v f I) (hI : BddBelow I)
-    (h_extend :
-      ∀ K : Set E, IsCompact K → K ⊆ U → ∀ ε > (0 : ℝ),
-        (∀ t ∈ I, t < sInf I + ε → f t ∈ K) →
-          ∃ g J,
-            IsIntegralCurveOn g v J ∧ IsOpen J ∧ IsConnected J ∧
-              I ⊆ J ∧ EqOn f g I ∧ ∃ t, t ∈ J ∧ t < sInf I) :
-    ∀ K : Set E, IsCompact K → K ⊆ U →
-      ∃ᶠ t in 𝓝[>] sInf I, t ∈ I ∧ f t ∉ K := by
-  simpa using
-    (IsMaximalODESolution.leavesEveryCompact_left_of_property
-      (h:=h) hI (P:=fun K => K ⊆ U)
-      (by
-        intro K hK hKU ε hε htraj
-        exact h_extend K hK hKU ε hε htraj))
-
-/--
 **Right-endpoint compact-exit lemma (time-dependent, uniform existence hypothesis; eventual form).**
 
 Under the uniform existence and Lipschitz hypotheses below, the solution is eventually outside
@@ -605,6 +383,9 @@ namespace IsMaximalODESolution
 
 /--
 **Right-endpoint compact-exit lemma (time-dependent, Picard–Lindelöf on a strip; eventual form).**
+
+This is a wrapper around `IsMaximalODESolution.leavesEveryCompact_right_time_dependent_eventually`
+using a uniform time-of-existence hypothesis obtained from Picard–Lindelöf on a time strip.
 -/
 theorem leavesEveryCompact_right_time_dependent_of_IsPicardLindelof_on_Icc_eventually
   [CompleteSpace E]
@@ -637,6 +418,9 @@ theorem leavesEveryCompact_right_time_dependent_of_IsPicardLindelof_on_Icc_event
 
 /--
 **Left-endpoint compact-exit lemma (time-dependent, Picard–Lindelöf on a strip; eventual form).**
+
+This is a wrapper around `IsMaximalODESolution.leavesEveryCompact_left_time_dependent_eventually`
+using a uniform time-of-existence hypothesis obtained from Picard–Lindelöf on a time strip.
 -/
 theorem leavesEveryCompact_left_time_dependent_of_IsPicardLindelof_on_Icc_eventually
   [CompleteSpace E]
@@ -991,6 +775,139 @@ theorem IsMaximalODESolution.unbounded_of_compact_bound_autonomous_of_contDiffAt
       exact hcontra (htraj (t + δ') ht')
     exact hnot hEvent
 
+/-! ### Proper-space corollaries
+
+The proper-space assumption is needed to turn norm bounds into compact sets: in
+infinite-dimensional normed spaces, closed balls are not compact, so compact-exit does not imply
+norm blow-up without `[ProperSpace E]`.
+-/
+
+/--
+**Global existence from linear growth (proper spaces).**
+
+If `f` has linear growth and `φ` is a maximal solution of `x' = f x`, then the domain is unbounded
+both above and below.
+-/
+theorem IsMaximalODESolution.global_existence_of_linear_growth
+  [CompleteSpace E] [ProperSpace E]
+  {f : E → E} {φ : ℝ → E} {I : Set ℝ}
+  (h : IsMaximalODESolution (fun _ => f) φ I) (hI_nonempty : I.Nonempty)
+  (hf : ∀ x : E, ContDiffAt ℝ 1 f x)
+  {K C : ℝ} (hK : 0 ≤ K) (hC : 0 ≤ C)
+  (h_growth : ∀ x : E, ‖f x‖ ≤ K * ‖x‖ + C) :
+  ¬ BddAbove I ∧ ¬ BddBelow I := by
+    classical
+    have not_bddAbove_of_linear_growth :
+        ∀ {f : E → E} {φ : ℝ → E} {I : Set ℝ},
+          IsMaximalODESolution (fun _ => f) φ I → I.Nonempty →
+          (∀ x : E, ContDiffAt ℝ 1 f x) → (0 ≤ K) → (0 ≤ C) →
+          (∀ x : E, ‖f x‖ ≤ K * ‖x‖ + C) → ¬ BddAbove I := by
+      intro f φ I h hI_nonempty0 hf hK hC h_growth hI
+      rcases hI_nonempty0 with ⟨t0, ht0⟩
+      have ht0_lt : t0 < sSup I := by
+        have hnhds : I ∈ 𝓝 t0 := h.isOpen.mem_nhds ht0
+        rcases Metric.mem_nhds_iff.mp hnhds with ⟨δ, hδpos, hball⟩
+        have ht' : t0 + δ / 2 ∈ I := by
+          have hhalf_lt : δ / 2 < δ := by nlinarith [hδpos]
+          have hdist_lt : dist (t0 + δ / 2) t0 < δ := by
+            have h_abs : |δ| / 2 < δ := by
+              simpa [abs_of_pos hδpos] using hhalf_lt
+            simpa [Real.dist_eq, sub_eq_add_neg, add_comm, add_left_comm, add_assoc] using h_abs
+          exact hball hdist_lt
+        have hlt : t0 < t0 + δ / 2 := by nlinarith [hδpos]
+        have ht'_le : t0 + δ / 2 ≤ sSup I := le_csSup hI ht'
+        exact lt_of_lt_of_le hlt ht'_le
+      let R : ℝ := gronwallBound ‖φ t0‖ K C (sSup I - t0)
+      have h_bound : ∀ t ∈ I, t0 ≤ t → ‖φ t‖ ≤ R := by
+        intro t htI ht0t
+        have hI_ord : OrdConnected I := h.isConnected.isPreconnected.ordConnected
+        have hIcc : Icc t0 t ⊆ I := by
+          intro x hx
+          exact hI_ord.out ht0 htI hx
+        have hcont : ContinuousOn φ (Icc t0 t) := h.deriv.continuousOn.mono hIcc
+        have hderiv :
+            ∀ x ∈ Ico t0 t, HasDerivWithinAt φ (f (φ x)) (Ici x) x := by
+          intro x hx
+          have hxI : x ∈ I := hIcc ⟨hx.1, le_of_lt hx.2⟩
+          have h' := (h.deriv x hxI).hasDerivAt (h.isOpen.mem_nhds hxI)
+          exact h'.hasDerivWithinAt
+        have hbound :
+            ∀ x ∈ Ico t0 t, ‖f (φ x)‖ ≤ K * ‖φ x‖ + C := by
+          intro x hx
+          simpa using h_growth (φ x)
+        have hG := norm_le_gronwallBound_of_norm_deriv_right_le
+          hcont hderiv (by exact le_rfl) hbound
+        have hG' : ‖φ t‖ ≤ gronwallBound ‖φ t0‖ K C (t - t0) :=
+          hG t ⟨ht0t, le_rfl⟩
+        have hmono : Monotone (gronwallBound ‖φ t0‖ K C) :=
+          gronwallBound_mono (hδ:=by exact norm_nonneg _) hC hK
+        have hle : gronwallBound ‖φ t0‖ K C (t - t0) ≤
+            gronwallBound ‖φ t0‖ K C (sSup I - t0) := by
+          have ht_le : t ≤ sSup I := le_csSup hI htI
+          exact hmono (sub_le_sub_right ht_le _)
+        exact hG'.trans hle
+      have hBoundEvent :
+          ∀ᶠ t in 𝓝[<] sSup I, t ∈ I → φ t ∈ closedBall (0 : E) R := by
+        refine (eventually_nhdsLT_iff (a:=sSup I)
+          (p:=fun t => t ∈ I → φ t ∈ closedBall (0 : E) R)).2 ?_
+        refine ⟨t0, ht0_lt, ?_⟩
+        intro t ht htI
+        have hnorm_le := h_bound t htI (le_of_lt ht.1)
+        simpa [mem_closedBall, dist_eq_norm] using hnorm_le
+      have hExit := IsMaximalODESolution.leavesEveryCompact_right_autonomous_of_contDiffAt
+        (h:=h) hI (K:=closedBall (0 : E) R) (isCompact_closedBall _ _) hf
+      rcases (eventually_nhdsLT_iff (a:=sSup I)
+        (p:=fun t => t ∈ I → φ t ∉ closedBall (0 : E) R)).1 hExit with
+        ⟨l_exit, hl_exit, h_exit⟩
+      rcases (eventually_nhdsLT_iff (a:=sSup I)
+        (p:=fun t => t ∈ I → φ t ∈ closedBall (0 : E) R)).1 hBoundEvent with
+        ⟨l_bound, hl_bound, h_bound_ev⟩
+      set l := max l_exit l_bound
+      have hl : l < sSup I := max_lt_iff.mpr ⟨hl_exit, hl_bound⟩
+      have hI_nonempty' : I.Nonempty := ⟨t0, ht0⟩
+      rcases (lt_csSup_iff (s:=I) hI hI_nonempty').1 hl with ⟨t, htI, hlt⟩
+      have ht_lt : t < sSup I := by
+        have hnhds : I ∈ 𝓝 t := h.isOpen.mem_nhds htI
+        rcases Metric.mem_nhds_iff.mp hnhds with ⟨δ, hδpos, hball⟩
+        have ht' : t + δ / 2 ∈ I := by
+          have hhalf_lt : δ / 2 < δ := by nlinarith [hδpos]
+          have hdist_lt : dist (t + δ / 2) t < δ := by
+            have h_abs : |δ| / 2 < δ := by
+              simpa [abs_of_pos hδpos] using hhalf_lt
+            simpa [Real.dist_eq, sub_eq_add_neg, add_comm, add_left_comm, add_assoc] using h_abs
+          exact hball hdist_lt
+        have hlt' : t < t + δ / 2 := by nlinarith [hδpos]
+        have ht'_le : t + δ / 2 ≤ sSup I := le_csSup hI ht'
+        exact lt_of_lt_of_le hlt' ht'_le
+      have ht_exit : l_exit < t := lt_of_le_of_lt (le_max_left _ _) hlt
+      have ht_bound : l_bound < t := lt_of_le_of_lt (le_max_right _ _) hlt
+      have h_out := h_exit t ⟨ht_exit, ht_lt⟩ htI
+      have h_in := h_bound_ev t ⟨ht_bound, ht_lt⟩ htI
+      exact h_out h_in
+    have h_not_bddAbove : ¬ BddAbove I :=
+      not_bddAbove_of_linear_growth (f:=f) (φ:=φ) (I:=I) h hI_nonempty hf hK hC h_growth
+    have h_not_bddBelow : ¬ BddBelow I := by
+      intro hI
+      let f_rev : E → E := fun x => - f x
+      let φ_rev : ℝ → E := φ ∘ Neg.neg
+      let I_rev : Set ℝ := Neg.neg ⁻¹' I
+      have h_rev : IsMaximalODESolution (fun _ => f_rev) φ_rev I_rev :=
+        IsMaximalODESolution.comp_neg_iff.mpr h
+      have hI_rev_nonempty : I_rev.Nonempty := by
+        rcases hI_nonempty with ⟨t, ht⟩
+        exact ⟨-t, by simpa [I_rev] using ht⟩
+      have hf_rev : ∀ x : E, ContDiffAt ℝ 1 f_rev x := by
+        intro x
+        simpa [f_rev] using (hf x).neg
+      have h_growth_rev : ∀ x : E, ‖f_rev x‖ ≤ K * ‖x‖ + C := by
+        intro x
+        simpa [f_rev] using h_growth x
+      have hI_rev_bdd : BddAbove I_rev := BddAbove_preimage_neg hI
+      exact
+        not_bddAbove_of_linear_growth (f:=f_rev) (φ:=φ_rev) (I:=I_rev) h_rev
+          hI_rev_nonempty hf_rev hK hC h_growth_rev hI_rev_bdd
+    exact ⟨h_not_bddAbove, h_not_bddBelow⟩
+
 /--
 **Finite-time blow-up (right, proper spaces; eventual form).**
 
@@ -1019,6 +936,26 @@ theorem IsMaximalODESolution.norm_unbounded_right_autonomous_of_contDiffAt
   exact hnorm
 
 /--
+**Tendsto packaging (right, proper spaces).**
+
+In a proper space, the norm of a maximal solution with a global $C^1$ vector field tends to
+$+\infty$ along the within-domain left-neighborhood filter `𝓝[<] sSup I ⊓ 𝓟 I`.
+-/
+theorem IsMaximalODESolution.tendsto_norm_right_autonomous_of_contDiffAt
+    [CompleteSpace E] [ProperSpace E]
+    {f : E → E} {φ : ℝ → E} {I : Set ℝ}
+    (h : IsMaximalODESolution (fun _ => f) φ I) (hI : BddAbove I)
+    (hf : ∀ x : E, ContDiffAt ℝ 1 f x) :
+    Tendsto (fun t => ‖φ t‖) (𝓝[<] sSup I ⊓ 𝓟 I) atTop := by
+  refine tendsto_atTop.2 ?_
+  intro R
+  have hEvent := IsMaximalODESolution.norm_unbounded_right_autonomous_of_contDiffAt
+    (h:=h) hI hf R
+  have hEvent' : ∀ᶠ t in 𝓝[<] sSup I ⊓ 𝓟 I, R < ‖φ t‖ :=
+    (eventually_inf_principal).2 hEvent
+  exact hEvent'.mono fun _ ht => le_of_lt ht
+
+/--
 **Finite-time blow-up (left, proper spaces; eventual form).**
 
 If `E` is a proper space, then compact-exit implies that the norm is eventually above any
@@ -1044,6 +981,26 @@ theorem IsMaximalODESolution.norm_unbounded_left_autonomous_of_contDiffAt
   have hnorm : R < ‖φ t‖ := by
     simpa [dist_eq_norm] using hdist
   exact hnorm
+
+/--
+**Tendsto packaging (left, proper spaces).**
+
+In a proper space, the norm of a maximal solution with a global $C^1$ vector field tends to
+$+\infty$ along the within-domain right-neighborhood filter `𝓝[>] sInf I ⊓ 𝓟 I`.
+-/
+theorem IsMaximalODESolution.tendsto_norm_left_autonomous_of_contDiffAt
+    [CompleteSpace E] [ProperSpace E]
+    {f : E → E} {φ : ℝ → E} {I : Set ℝ}
+    (h : IsMaximalODESolution (fun _ => f) φ I) (hI : BddBelow I) (hI_nonempty : I.Nonempty)
+    (hf : ∀ x : E, ContDiffAt ℝ 1 f x) :
+    Tendsto (fun t => ‖φ t‖) (𝓝[>] sInf I ⊓ 𝓟 I) atTop := by
+  refine tendsto_atTop.2 ?_
+  intro R
+  have hEvent := IsMaximalODESolution.norm_unbounded_left_autonomous_of_contDiffAt
+    (h:=h) hI hI_nonempty hf R
+  have hEvent' : ∀ᶠ t in 𝓝[>] sInf I ⊓ 𝓟 I, R < ‖φ t‖ :=
+    (eventually_inf_principal).2 hEvent
+  exact hEvent'.mono fun _ ht => le_of_lt ht
 
 /--
 **Escape lemma (proper spaces; eventual form).**
@@ -1118,3 +1075,45 @@ theorem IsMaximalODESolution.norm_unbounded_or_dist_boundary_tendsto_zero_of_pro
       not_and_or.mp ht_not'
     exact ht_or.elim (fun h => Or.inl (lt_of_not_ge h)) (fun h => Or.inr (lt_of_not_ge h))
   exact ht_disj
+
+/--
+**Trapping/invariance corollary (proper spaces).**
+
+If the solution stays in an open set `U`, is norm-bounded, and remains a positive distance from
+`Uᶜ`, then the right endpoint cannot be finite.
+-/
+theorem IsMaximalODESolution.not_bddAbove_of_trapped
+    [CompleteSpace E] [ProperSpace E]
+    {f : E → E} {φ : ℝ → E} {I : Set ℝ} {U : Set E}
+    (h : IsMaximalODESolution (fun _ => f) φ I) (hI_nonempty : I.Nonempty)
+    (hf : ∀ x : E, ContDiffAt ℝ 1 f x)
+    (hU : IsOpen U) (h_subset : ∀ t ∈ I, φ t ∈ U)
+    {R δ : ℝ} (hδ : 0 < δ)
+    (h_bound : ∀ t ∈ I, ‖φ t‖ ≤ R)
+    (h_dist : ∀ t ∈ I, δ ≤ infDist (φ t) Uᶜ) :
+    ¬ BddAbove I := by
+  intro hI
+  have hEscape :=
+    IsMaximalODESolution.norm_unbounded_or_dist_boundary_tendsto_zero_of_properSpace
+      (h:=h) hI hf hU h_subset R δ hδ
+  rcases (eventually_nhdsLT_iff (a:=sSup I)
+    (p:=fun t => t ∈ I → (R < ‖φ t‖ ∨ infDist (φ t) Uᶜ < δ))).1 hEscape with
+    ⟨l, hl, hl_prop⟩
+  rcases (lt_csSup_iff hI hI_nonempty).1 hl with ⟨t, htI, hlt⟩
+  have ht_lt : t < sSup I := by
+    have hnhds : I ∈ 𝓝 t := h.isOpen.mem_nhds htI
+    rcases Metric.mem_nhds_iff.mp hnhds with ⟨ε, hεpos, hball⟩
+    have ht' : t + ε / 2 ∈ I := by
+      have hhalf_lt : ε / 2 < ε := by nlinarith [hεpos]
+      have hdist_lt : dist (t + ε / 2) t < ε := by
+        have h_abs : |ε| / 2 < ε := by
+          simpa [abs_of_pos hεpos] using hhalf_lt
+        simpa [Real.dist_eq, sub_eq_add_neg, add_comm, add_left_comm, add_assoc] using h_abs
+      exact hball hdist_lt
+    have hlt' : t < t + ε / 2 := by nlinarith [hεpos]
+    have ht'_le : t + ε / 2 ≤ sSup I := le_csSup hI ht'
+    exact lt_of_lt_of_le hlt' ht'_le
+  have hescape := hl_prop t ⟨hlt, ht_lt⟩ htI
+  have hnot_norm : ¬ R < ‖φ t‖ := not_lt_of_ge (h_bound t htI)
+  have hnot_dist : ¬ infDist (φ t) Uᶜ < δ := not_lt_of_ge (h_dist t htI)
+  exact hescape.elim hnot_norm hnot_dist
