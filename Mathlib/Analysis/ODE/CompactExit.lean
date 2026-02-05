@@ -939,7 +939,7 @@ theorem IsMaximalODESolution.norm_unbounded_right_autonomous_of_contDiffAt
   exact hnorm
 
 /--
-**Tendsto packaging (right, proper spaces).**
+**Finite-time blow-up (right, proper spaces; tendsto form).**
 
 In a proper space, the norm of a maximal solution with a global $C^1$ vector field tends to
 $+\infty$ along the within-domain left-neighborhood filter `𝓝[<] sSup I ⊓ 𝓟 I`.
@@ -986,7 +986,7 @@ theorem IsMaximalODESolution.norm_unbounded_left_autonomous_of_contDiffAt
   exact hnorm
 
 /--
-**Tendsto packaging (left, proper spaces).**
+**Finite-time blow-up (left, proper spaces; tendsto form).**
 
 In a proper space, the norm of a maximal solution with a global $C^1$ vector field tends to
 $+\infty$ along the within-domain right-neighborhood filter `𝓝[>] sInf I ⊓ 𝓟 I`.
