@@ -901,6 +901,16 @@ protected noncomputable def taylorComp
     FormalMultilinearSeries 𝕜 E G :=
   fun n ↦ ∑ c : OrderedFinpartition n, q.compAlongOrderedFinpartition p c
 
+lemma taylorComp_eq_of_eq_on {p p' : FormalMultilinearSeries 𝕜 E F}
+    {q q' : FormalMultilinearSeries 𝕜 F G} {n : ℕ}
+    (hp : ∀ m ≤ n, p m = p' m) (hq : ∀ m ≤ n, q m = q' m) :
+    (FormalMultilinearSeries.taylorComp q p) n =
+      (FormalMultilinearSeries.taylorComp q' p') n := by
+  classical
+  ext v
+  simp [FormalMultilinearSeries.taylorComp, FormalMultilinearSeries.compAlongOrderedFinpartition,
+    hp, hq, OrderedFinpartition.length_le, OrderedFinpartition.partSize_le]
+
 /-- An upper estimate (in terms of `Asymptotics.IsBigO`)
 on the difference between two compositions of Taylor series.
 
