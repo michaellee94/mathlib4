@@ -5,15 +5,9 @@ Authors: Michael Lee
 -/
 module
 
-public import Mathlib.Analysis.Calculus.Deriv.Shift
-public import Mathlib.Analysis.Calculus.ContDiff.RCLike
 public import Mathlib.Algebra.Order.Group.Bounds
 public import Mathlib.Analysis.ODE.MaximalSolution
-public import Mathlib.Analysis.ODE.PicardLindelof
-public import Mathlib.Analysis.ODE.Gronwall
 public import Mathlib.Analysis.ODE.Transform
-public import Mathlib.Topology.Order.LeftRightNhds
-public import Mathlib.Topology.MetricSpace.ProperSpace
 
 /-!
 # Compact-exit lemma ("lemme des bouts")
