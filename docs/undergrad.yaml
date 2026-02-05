@@ -475,7 +475,7 @@ Multivariable calculus:
     Cauchy-Lipschitz Theorem: 'IsPicardLindelof.exists_eq_forall_mem_Icc_hasDerivWithinAt'
     maximal solutions: 'exists_maximal_ode_solution'
     Grönwall lemma: 'norm_le_gronwallBound_of_norm_deriv_right_le'
-    exit theorem of a compact subspace: ''
+    exit theorem of a compact subspace: 'IsMaximalODESolution.leavesEveryCompact_right_autonomous_of_contDiffAt'
     autonomous differential equations: ''
     phase portraits: ''
     qualitative behavior: ''
