@@ -246,6 +246,17 @@ private theorem contradiction_from_strict_extension_right
 
 namespace IsMaximalODESolutionWithin
 
+/--
+Domain-restricted compact-exit lemma at the **right** endpoint (time-dependent, eventual form).
+
+Let `φ` be a maximal ODE solution within `U` (in the sense of `IsMaximalODESolutionWithin`) with
+domain `I`. Assume `I` is bounded above and that we have a uniform local existence hypothesis for
+the (extended) vector field near `sSup I`, together with a (joint) locally Lipschitz hypothesis.
+Then `φ` eventually leaves every compact set as `t → sSup I` from the left (within `I`).
+
+The conclusion is stated as an eventual property along `𝓝[<] sSup I`:
+`∀ᶠ t in 𝓝[<] sSup I, t ∈ I → φ t ∉ K`.
+-/
 theorem leavesEveryCompact_right_time_dependent_locallyLipschitz_eventually
     {U : Set (ℝ × E)} {v : {p : ℝ × E // p ∈ U} → E} {φ : ℝ → E} {I : Set ℝ}
     (h0 : IsMaximalODESolutionWithin U v φ I) (hI : BddAbove I)
@@ -395,6 +406,17 @@ private theorem eventually_left_from_eventually_right_timeReversal
     have hnot := hl_prop (-t) ht' htI'
     simpa [Function.comp] using hnot
 
+/--
+Domain-restricted compact-exit lemma at the **left** endpoint (time-dependent, eventual form).
+
+This is the time-reversal of
+`IsMaximalODESolutionWithin.leavesEveryCompact_right_time_dependent_locallyLipschitz_eventually`.
+Under the analogous uniform local existence and locally Lipschitz hypotheses near `sInf I`, a
+maximal solution eventually leaves any compact set as `t → sInf I` from the right (within `I`).
+
+The conclusion is stated as an eventual property along `𝓝[>] sInf I`:
+`∀ᶠ t in 𝓝[>] sInf I, t ∈ I → φ t ∉ K`.
+-/
 theorem leavesEveryCompact_left_time_dependent_locallyLipschitz_eventually
     {U : Set (ℝ × E)} {v : {p : ℝ × E // p ∈ U} → E} {φ : ℝ → E} {I : Set ℝ}
     (h0 : IsMaximalODESolutionWithin U v φ I) (hI : BddBelow I) (hI_nonempty : I.Nonempty)
@@ -459,7 +481,12 @@ theorem leavesEveryCompact_left_time_dependent_locallyLipschitz_eventually
     hI hI_nonempty (by simpa [I_rev, f_rev] using h_event_rev)
 
 /--
-Domain-restricted right-endpoint compact-exit lemma (product-space version).
+Domain-restricted compact-exit lemma at the **right** endpoint (product-space version).
+
+This is a convenience wrapper around
+`IsMaximalODESolutionWithin.leavesEveryCompact_right_time_dependent_locallyLipschitz_eventually`
+applied to the curve `t ↦ (t, φ t)`. It upgrades escape from compact sets in `E` to escape from
+compact sets in `ℝ × E`.
 -/
 theorem
   leavesEveryCompact_right_time_dependent_locallyLipschitz_eventually_prod
@@ -483,7 +510,12 @@ theorem
   exact ⟨(t, φ t), htK, rfl⟩
 
 /--
-Domain-restricted left-endpoint compact-exit lemma (product-space version).
+Domain-restricted compact-exit lemma at the **left** endpoint (product-space version).
+
+This is the product-space analogue of
+`IsMaximalODESolutionWithin.leavesEveryCompact_left_time_dependent_locallyLipschitz_eventually`.
+It asserts that the graph `t ↦ (t, φ t)` eventually leaves any compact subset of `ℝ × E` as
+`t → sInf I` from the right (within `I`).
 -/
 theorem
   leavesEveryCompact_left_time_dependent_locallyLipschitz_eventually_prod
@@ -1129,6 +1161,10 @@ private theorem not_bddBelow_of_linear_growth_within_univ
 
 If `f` has linear growth and `φ` is a maximal solution of `x' = f x`, then the domain is unbounded
 both above and below.
+
+This is the standard ODE “no finite-time blow-up under linear growth” conclusion: in a proper
+(hence locally compact) complete space, a maximal solution cannot have a finite endpoint if the
+vector field grows at most linearly.
 -/
 theorem IsMaximalODESolutionWithin.global_existence_of_linear_growth
   [CompleteSpace E] [ProperSpace E]
@@ -1226,6 +1262,9 @@ private theorem contradiction_of_trapped_assumptions_at_eventual_point
 
 If the solution stays in an open set `U`, is norm-bounded, and remains a positive distance from
 `Uᶜ`, then the right endpoint cannot be finite.
+
+Heuristically: if the trajectory remains in a compact subset of `U`, then maximality forces the
+time domain to be unbounded above.
 -/
 theorem IsMaximalODESolutionWithin.not_bddAbove_of_trapped
     [CompleteSpace E] [ProperSpace E]
