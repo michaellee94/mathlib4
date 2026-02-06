@@ -842,6 +842,38 @@ variable {X : Type*} [ConditionallyCompleteLinearOrder X] [TopologicalSpace X] [
 variable {Y : Type*} [ConditionallyCompleteLinearOrder Y] [TopologicalSpace Y] [OrderTopology Y]
 variable [DenselyOrdered X] {f : X → Y} {x : X}
 
+/-- If `I` is open, contains `t`, and is bounded above, then `t < sSup I` provided there exists
+`u > t`. This avoids any global `NoMaxOrder` assumption. -/
+lemma lt_csSup_of_mem_of_isOpen_of_exists_gt {I : Set X} (hI_open : IsOpen I)
+    (hI_bddAbove : BddAbove I) {t : X} (htI : t ∈ I) (hu : ∃ u, t < u) :
+    t < sSup I := by
+  have hnhds : I ∈ 𝓝 t := hI_open.mem_nhds htI
+  rcases exists_Ico_subset_of_mem_nhds hnhds hu with ⟨u, htu, huI⟩
+  rcases exists_between htu with ⟨t', htt', ht'u⟩
+  have ht'I : t' ∈ I := huI ⟨le_of_lt htt', ht'u⟩
+  exact lt_csSup_of_lt hI_bddAbove ht'I htt'
+
+/-- If `I` is open, contains `t`, and is bounded below, then `sInf I < t` provided there exists
+`l < t`. This avoids any global `NoMinOrder` assumption. -/
+lemma csInf_lt_of_mem_of_isOpen_of_exists_lt {I : Set X} (hI_open : IsOpen I)
+    (hI_bddBelow : BddBelow I) {t : X} (htI : t ∈ I) (hl : ∃ l, l < t) :
+    sInf I < t := by
+  have hnhds : I ∈ 𝓝 t := hI_open.mem_nhds htI
+  rcases exists_Ioc_subset_of_mem_nhds hnhds hl with ⟨l, hlt, hlI⟩
+  rcases exists_between hlt with ⟨t', ht'l, htt'⟩
+  have ht'I : t' ∈ I := hlI ⟨ht'l, le_of_lt htt'⟩
+  exact csInf_lt_of_lt hI_bddBelow ht'I htt'
+
+/-- Convenience version of `lt_csSup_of_mem_of_isOpen_of_exists_gt` using `NoMaxOrder`. -/
+lemma lt_csSup_of_mem_of_isOpen [NoMaxOrder X] {I : Set X} (hI_open : IsOpen I)
+    (hI_bddAbove : BddAbove I) {t : X} (htI : t ∈ I) : t < sSup I :=
+  lt_csSup_of_mem_of_isOpen_of_exists_gt hI_open hI_bddAbove htI (exists_gt t)
+
+/-- Convenience version of `csInf_lt_of_mem_of_isOpen_of_exists_lt` using `NoMinOrder`. -/
+lemma csInf_lt_of_mem_of_isOpen [NoMinOrder X] {I : Set X} (hI_open : IsOpen I)
+    (hI_bddBelow : BddBelow I) {t : X} (htI : t ∈ I) : sInf I < t :=
+  csInf_lt_of_mem_of_isOpen_of_exists_lt hI_open hI_bddBelow htI (exists_lt t)
+
 /-- An order-theoretically left-continuous function is topologically left-continuous, assuming
 the function is between conditionally complete linear orders with order topologies, and the domain
 is densely ordered. -/

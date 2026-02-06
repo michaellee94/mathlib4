@@ -45,6 +45,21 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 def IsIntegralCurveOn (γ : ℝ → E) (v : ℝ → E → E) (s : Set ℝ) : Prop :=
   ∀ t ∈ s, HasDerivWithinAt γ (v t (γ t)) s t
 
+/-- Extend a vector field defined on an open domain `U ⊆ ℝ × E` to all of `ℝ × E`
+by setting it to `0` outside `U`. -/
+noncomputable def extendVectorField (U : Set (ℝ × E))
+    (v : {p : ℝ × E // p ∈ U} → E) : ℝ → E → E :=
+  by
+    classical
+    intro t x
+    exact if h : (t, x) ∈ U then v ⟨(t, x), h⟩ else 0
+
+/-- A domain-restricted integral curve: the trajectory stays in `U` and solves the ODE
+for the zero-extension of `v`. -/
+def IsIntegralCurveOnWithin (γ : ℝ → E) (U : Set (ℝ × E))
+    (v : {p : ℝ × E // p ∈ U} → E) (s : Set ℝ) : Prop :=
+  (∀ t ∈ s, (t, γ t) ∈ U) ∧ IsIntegralCurveOn γ (extendVectorField (E := E) U v) s
+
 /-- `IsIntegralCurveAt γ v t₀` means `γ : ℝ → E` is a local integral curve of `v` in a neighbourhood
 containing `t₀`. -/
 def IsIntegralCurveAt (γ : ℝ → E) (v : ℝ → E → E) (t₀ : ℝ) : Prop :=
@@ -56,6 +71,30 @@ def IsIntegralCurve (γ : ℝ → E) (v : ℝ → E → E) : Prop :=
   ∀ t : ℝ, HasDerivAt γ (v t (γ t)) t
 
 variable {γ γ' : ℝ → E} {v : ℝ → E → E} {s s' : Set ℝ} {t₀ : ℝ}
+
+omit [NormedSpace ℝ E] in
+lemma extendVectorField_apply_of_mem {U : Set (ℝ × E)}
+    {v : {p : ℝ × E // p ∈ U} → E} {t : ℝ} {x : E} (h : (t, x) ∈ U) :
+    extendVectorField U v t x = v ⟨(t, x), h⟩ := by
+  classical
+  simp [extendVectorField, h]
+
+omit [NormedSpace ℝ E] in
+lemma extendVectorField_apply_of_not_mem {U : Set (ℝ × E)}
+    {v : {p : ℝ × E // p ∈ U} → E} {t : ℝ} {x : E} (h : (t, x) ∉ U) :
+    extendVectorField U v t x = 0 := by
+  classical
+  simp [extendVectorField, h]
+
+lemma IsIntegralCurveOnWithin.mapsTo {U : Set (ℝ × E)}
+    {v : {p : ℝ × E // p ∈ U} → E} {γ : ℝ → E} {s : Set ℝ}
+    (h : IsIntegralCurveOnWithin γ U v s) :
+    ∀ t ∈ s, (t, γ t) ∈ U := h.1
+
+lemma IsIntegralCurveOnWithin.isIntegralCurveOn {U : Set (ℝ × E)}
+    {v : {p : ℝ × E // p ∈ U} → E} {γ : ℝ → E} {s : Set ℝ}
+    (h : IsIntegralCurveOnWithin γ U v s) :
+    IsIntegralCurveOn γ (extendVectorField U v) s := h.2
 
 lemma IsIntegralCurve.isIntegralCurveOn (h : IsIntegralCurve γ v) (s : Set ℝ) :
     IsIntegralCurveOn γ v s := fun t _ ↦ (h t).hasDerivWithinAt
@@ -154,6 +193,11 @@ lemma IsIntegralCurve.toExtended (h : IsIntegralCurve γ v) :
     IsIntegralCurve (fun t => (γ t, t)) (fun _ p => (v p.2 p.1, (1 : ℝ))) := by
   intro t
   exact (h t).prodMk (hasDerivAt_id t)
+
+/-- Properness of the extended curve `t ↦ (t, γ t)` on a domain `I`, expressed via compact
+preimages. -/
+def IsProperExtendedCurve (γ : ℝ → E) (I : Set ℝ) : Prop :=
+  ∀ K : Set (ℝ × E), IsCompact K → IsCompact {t : I | ((t : ℝ), γ t) ∈ K}
 
 /-- The first component of an extended integral curve is an integral curve of the original
 time-dependent system, provided the second component derivative is 1 and equals `v`. -/

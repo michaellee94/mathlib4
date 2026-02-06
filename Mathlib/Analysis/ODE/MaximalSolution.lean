@@ -8,6 +8,7 @@ module
 public import Mathlib.Analysis.ODE.Basic
 public import Mathlib.Analysis.ODE.Gronwall
 public import Mathlib.Analysis.ODE.PicardLindelof
+public import Mathlib.Analysis.ODE.Transform
 public import Mathlib.Order.Defs.PartialOrder
 public import Mathlib.Order.Zorn
 public import Mathlib.Topology.Connected.Basic
@@ -186,6 +187,108 @@ structure IsMaximalODESolution (v : ℝ → E → E) (f : ℝ → E) (I : Set �
   with `g` on `I`, then `I` must be equal to `J`. -/
   is_maximal : ∀ (g : ℝ → E) (J : Set ℝ), IsIntegralCurveOn g v J → IsOpen J → IsConnected J →
     I ⊆ J → (EqOn f g I) → I = J
+
+/--
+Domain-restricted maximal ODE solutions.
+
+`IsMaximalODESolutionWithin U v f I` stores maximality for the zero-extension of `v` outside `U`,
+and separately records that the trajectory stays in `U` on `I`.
+-/
+structure IsMaximalODESolutionWithin (U : Set (ℝ × E))
+    (v : {p : ℝ × E // p ∈ U} → E) (f : ℝ → E) (I : Set ℝ) : Prop where
+  toIsMaximal : IsMaximalODESolution (extendVectorField U v) f I
+  mapsTo : ∀ t ∈ I, (t, f t) ∈ U
+
+namespace IsMaximalODESolutionWithin
+
+variable {U : Set (ℝ × E)} {v : {p : ℝ × E // p ∈ U} → E} {f : ℝ → E} {I : Set ℝ}
+
+lemma isOpen (h : IsMaximalODESolutionWithin U v f I) : IsOpen I :=
+  h.toIsMaximal.isOpen
+
+lemma isConnected (h : IsMaximalODESolutionWithin U v f I) : IsConnected I :=
+  h.toIsMaximal.isConnected
+
+lemma deriv
+    (h : IsMaximalODESolutionWithin U v f I) :
+    IsIntegralCurveOnWithin f U v I :=
+  ⟨h.mapsTo, h.toIsMaximal.deriv⟩
+
+theorem univ_iff {v : ℝ → E → E} {f : ℝ → E} {I : Set ℝ} :
+    IsMaximalODESolutionWithin
+        (U := (Set.univ : Set (ℝ × E)))
+        (v := fun p : {p : ℝ × E // p ∈ (Set.univ : Set (ℝ × E))} => v p.1.1 p.1.2)
+        f I ↔
+      IsMaximalODESolution v f I := by
+  classical
+  have hExt :
+      extendVectorField (U := (Set.univ : Set (ℝ × E)))
+          (fun p : {p : ℝ × E // p ∈ (Set.univ : Set (ℝ × E))} => v p.1.1 p.1.2) = v := by
+    funext t x
+    simp [extendVectorField]
+  constructor
+  · intro h
+    simpa [hExt] using h.toIsMaximal
+  · intro h
+    refine ⟨?_, ?_⟩
+    · simpa [hExt] using h
+    · intro t ht
+      simp
+
+end IsMaximalODESolutionWithin
+
+section TimeReversalHelpers
+
+variable {v : ℝ → E → E} {f : ℝ → E} {I : Set ℝ}
+
+theorem IsMaximalODESolution.comp_neg_iff :
+    IsMaximalODESolution (fun t x ↦ - v (-t) x) (f ∘ Neg.neg) (Neg.neg ⁻¹' I) ↔
+    IsMaximalODESolution v f I := by
+  constructor
+  · intro h
+    refine ⟨?_, ?_, IsIntegralCurveOn.comp_neg_iff.mp h.deriv, ?_⟩
+    · simpa [preimage_neg_neg_set] using h.isOpen.preimage continuous_neg
+    · exact ((Homeomorph.neg ℝ).isConnected_preimage (s:=I)).1 h.isConnected
+    intro g J hg hJopen hJconn hIJ hEq
+    have h_rev := h.is_maximal (g ∘ Neg.neg) (Neg.neg ⁻¹' J)
+      (IsIntegralCurveOn.comp_neg_iff.mpr hg)
+      (hJopen.preimage continuous_neg)
+      (((Homeomorph.neg ℝ).isConnected_preimage (s:=J)).2 hJconn)
+      (preimage_mono hIJ)
+      (fun t ht ↦ by
+        have ht' : -t ∈ I := by simpa using ht
+        have hEq' : f (-t) = g (-t) := hEq (x:=-t) ht'
+        simpa [Function.comp] using hEq')
+    have h_rev' := congrArg (fun s => Neg.neg ⁻¹' s) h_rev
+    simpa [preimage_neg_neg_set] using h_rev'
+  · intro h
+    refine ⟨?_, ?_, IsIntegralCurveOn.comp_neg_iff.mpr h.deriv, ?_⟩
+    · simpa [preimage_neg_neg_set] using h.isOpen.preimage continuous_neg
+    · exact ((Homeomorph.neg ℝ).isConnected_preimage (s:=I)).2 h.isConnected
+    intro g J hg hJopen hJconn hIJ hEq
+    have hg' : IsIntegralCurveOn (g ∘ Neg.neg) v (Neg.neg ⁻¹' J) := by
+      have hg' :=
+        (IsIntegralCurveOn.comp_neg_iff (v:=fun t x ↦ - v (-t) x) (γ:=g) (s:=J)).mpr hg
+      simpa [Function.comp] using hg'
+    have hEq' : EqOn f (g ∘ Neg.neg) I := by
+      intro t ht
+      have ht' : -t ∈ Neg.neg ⁻¹' I := by simpa
+      have hEq'' : f t = g (-t) := by simpa [Function.comp] using hEq (x:=-t) ht'
+      simpa [Function.comp] using hEq''
+    have hIJ' : I ⊆ Neg.neg ⁻¹' J := by
+      intro t ht
+      have : -t ∈ J := hIJ (by simpa using ht)
+      simpa using this
+    have h_rev := h.is_maximal (g ∘ Neg.neg) (Neg.neg ⁻¹' J)
+      hg'
+      (hJopen.preimage continuous_neg)
+      (((Homeomorph.neg ℝ).isConnected_preimage (s:=J)).2 hJconn)
+      hIJ'
+      hEq'
+    have h_rev' := congrArg (fun s => Neg.neg ⁻¹' s) h_rev
+    simpa [preimage_neg_neg_set] using h_rev'
+
+end TimeReversalHelpers
 
 open Classical in
 /--

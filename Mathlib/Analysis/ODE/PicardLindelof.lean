@@ -816,6 +816,184 @@ theorem uniform_time_of_existence_time_dependent_compact_on_Icc
     exact h2)
   exact (hα t htIcc).hasDerivAt (Icc_mem_nhds htmin_lt htmax_lt)
 
+/--
+**Uniform time of existence on compact sets (autonomous case, locally Lipschitz).**
+
+If `f` is locally Lipschitz, then every compact set admits a uniform time of existence.
+-/
+private theorem local_existence_centered_zero_autonomous_locallyLipschitz
+    {f : E → E} (hf : LocallyLipschitz f) (x : E) :
+    ∃ r > (0 : ℝ), ∃ ε > (0 : ℝ), ∀ y ∈ closedBall x r, ∃ α : ℝ → E,
+      α 0 = y ∧ ∀ t ∈ Ioo (-ε) ε, HasDerivAt α (f (α t)) t := by
+  rcases hf x with ⟨Kc, U, hU, hLipU⟩
+  rcases Metric.mem_nhds_iff.mp hU with ⟨a, ha, hball⟩
+  set a' : ℝ := a / 2
+  have ha' : 0 < a' := by
+    simpa [a'] using (half_pos ha)
+  have hsubset : closedBall x a' ⊆ U := by
+    have hsubset' : closedBall x a' ⊆ ball x a := closedBall_subset_ball (half_lt_self ha)
+    exact hsubset'.trans hball
+  have hLip : LipschitzOnWith Kc f (closedBall x a') := hLipU.mono hsubset
+  let L : ℝ := (Kc : ℝ) * a' + ‖f x‖ + 1
+  have hL0 : 0 < L := by positivity
+  have hbound : ∀ y ∈ closedBall x a', ‖f y‖ ≤ L := by
+    intro y hy
+    simp only [L]
+    calc
+      ‖f y‖ ≤ ‖f y - f x‖ + ‖f x‖ := norm_le_norm_sub_add _ _
+      _ ≤ (Kc : ℝ) * ‖y - x‖ + ‖f x‖ := by
+        gcongr
+        rw [← dist_eq_norm, ← dist_eq_norm]
+        exact hLip.dist_le_mul y hy x (mem_closedBall_self (le_of_lt ha'))
+      _ ≤ (Kc : ℝ) * a' + ‖f x‖ := by
+        gcongr
+        simpa [mem_closedBall, dist_eq_norm] using hy
+      _ ≤ L := by linarith
+  let ε : ℝ := (a' / 4) / L
+  have hε0 : 0 < ε := by
+    have hpos : 0 < a' / 4 := by nlinarith [ha']
+    exact div_pos hpos hL0
+  let a_nn : NNReal := ⟨a', le_of_lt ha'⟩
+  let r_nn : NNReal := ⟨a' / 2, by nlinarith [ha']⟩
+  let L_nn : NNReal := ⟨L, le_of_lt hL0⟩
+  have hb : ∀ y ∈ closedBall x (a_nn : ℝ), ‖f y‖ ≤ (L_nn : ℝ) := by
+    intro y hy
+    simpa [a_nn, L_nn] using hbound y hy
+  have hl : LipschitzOnWith Kc f (closedBall x (a_nn : ℝ)) := by
+    simpa [a_nn] using hLip
+  have hm :
+      (L_nn : ℝ) * max (ε - 0) (0 - (-ε)) ≤ (a_nn : ℝ) - r_nn := by
+    have hcalc : (L : ℝ) * ε = a' / 4 := by
+      have hLne : (L : ℝ) ≠ 0 := ne_of_gt hL0
+      calc
+        L * ε = (L * (a' / 4)) / L := by simp [ε, mul_div_assoc]
+        _ = a' / 4 := by simp [hLne]
+    have hright : (a_nn : ℝ) - r_nn = a' / 2 := by
+      simp [a_nn, r_nn, sub_half]
+    have hleft : (L_nn : ℝ) * max (ε - 0) (0 - (-ε)) = L * ε := by
+      simp [L_nn, sub_eq_add_neg, add_comm, max_self]
+    nlinarith [hcalc, hright, hleft]
+  have hpl : IsPicardLindelof (fun _ => f)
+      (tmin := -ε) (tmax := ε) ⟨0, by constructor <;> linarith [hε0]⟩ x a_nn r_nn L_nn Kc :=
+    IsPicardLindelof.of_time_independent hb hl hm
+  refine ⟨a' / 2, by nlinarith [ha'], ε, hε0, ?_⟩
+  intro y hy
+  have hy' : y ∈ closedBall x (r_nn : ℝ) := by
+    simpa [r_nn] using hy
+  rcases IsPicardLindelof.exists_eq_forall_mem_Icc_hasDerivWithinAt
+      (tmin := -ε) (tmax := ε) (t₀ := ⟨0, by constructor <;> linarith [hε0]⟩)
+      (x₀ := x) hpl hy' with ⟨α, hα0, hα⟩
+  refine ⟨α, hα0, ?_⟩
+  intro t ht
+  have htIcc : t ∈ Icc (-ε) ε := Ioo_subset_Icc_self ht
+  have hderiv := hα t htIcc
+  exact hderiv.hasDerivAt (Icc_mem_nhds ht.1 ht.2)
+
+omit [CompleteSpace E] in
+private theorem shift_solution_hasDerivAt
+    {f : E → E} {α : ℝ → E} {ε t₀ : ℝ}
+    (hα : ∀ t ∈ Ioo (-ε) ε, HasDerivAt α (f (α t)) t) :
+    ∀ t ∈ Ioo (t₀ - ε) (t₀ + ε),
+      HasDerivAt (fun s => α (s - t₀)) (f ((fun s => α (s - t₀)) t)) t := by
+  intro t ht
+  have ht' : t - t₀ ∈ Ioo (-ε) ε := by
+    constructor <;> nlinarith [ht.1, ht.2]
+  have hαderiv : HasDerivAt α (f (α (t - t₀))) (t - t₀) := hα (t - t₀) ht'
+  have hshift : HasDerivAt (fun s => α (s - t₀)) (f (α (t - t₀))) t :=
+    HasDerivAt.comp_sub_const (x := t) (a := t₀) hαderiv
+  simpa using hshift
+
+private theorem min'_image_pos_of_pos
+    {ι : Type*} (T : Finset ι) (hT : T.Nonempty) (g : ι → ℝ)
+    (hpos : ∀ x ∈ T, 0 < g x) :
+    0 < (T.image g).min' (Finset.image_nonempty.mpr hT) := by
+  have hmem : (T.image g).min' (Finset.image_nonempty.mpr hT) ∈ T.image g :=
+    Finset.min'_mem (T.image g) (Finset.image_nonempty.mpr hT)
+  rcases Finset.mem_image.mp hmem with ⟨x, hxT, hx_eq⟩
+  have hposx : 0 < g x := hpos x hxT
+  rw [← hx_eq]
+  exact hposx
+
+omit [NormedSpace ℝ E] [CompleteSpace E] in
+private theorem mem_closedBall_of_mem_ball_half
+    {x x₀ : E} {r : ℝ} (hr : 0 ≤ r) (hx : x ∈ ball x₀ (r / 2)) :
+    x ∈ closedBall x₀ r := by
+  have hsub1 : ball x₀ (r / 2) ⊆ closedBall x₀ (r / 2) := ball_subset_closedBall
+  have hsub2 : closedBall x₀ (r / 2) ⊆ closedBall x₀ r := by
+    exact closedBall_subset_closedBall (by nlinarith [hr])
+  exact hsub2 (hsub1 hx)
+
+theorem uniform_time_of_existence_autonomous_compact_locallyLipschitz
+  {f : E → E} (hf : LocallyLipschitz f) {K : Set E} (hK : IsCompact K) :
+    ∃ ε > (0 : ℝ), ∀ x ∈ K, ∀ t₀ : ℝ, ∃ α : ℝ → E,
+      α t₀ = x ∧ ∀ t ∈ Ioo (t₀ - ε) (t₀ + ε), HasDerivAt α (f (α t)) t := by
+  classical
+  by_cases hKempty : K = ∅
+  · refine ⟨1, by norm_num, ?_⟩
+    simp [hKempty]
+  have hK_nonempty : K.Nonempty := by
+    simpa [Set.nonempty_iff_ne_empty] using hKempty
+  have hlocal : ∀ x ∈ K, ∃ r > (0 : ℝ), ∃ ε > (0 : ℝ),
+      ∀ y ∈ closedBall x r, ∀ t₀ : ℝ, ∃ α : ℝ → E,
+        α t₀ = y ∧ ∀ t ∈ Ioo (t₀ - ε) (t₀ + ε), HasDerivAt α (f (α t)) t := by
+    intro x hx
+    rcases local_existence_centered_zero_autonomous_locallyLipschitz (hf := hf) x with
+      ⟨r, hr, ε, hε, H⟩
+    refine ⟨r, hr, ε, hε, ?_⟩
+    intro y hy t₀
+    rcases H y hy with ⟨α, hα0, hα⟩
+    refine ⟨fun t => α (t - t₀), ?_, ?_⟩
+    · simp [hα0]
+    · intro t ht
+      exact shift_solution_hasDerivAt (f := f) (α := α) (ε := ε) (t₀ := t₀) hα t ht
+  choose r hr ε hε H using hlocal
+  let r₀ : E → ℝ := fun x => if hx : x ∈ K then r x hx else 1
+  let ε₀ : E → ℝ := fun x => if hx : x ∈ K then ε x hx else 1
+  let U : E → Set E := fun x => ball x (r₀ x / 2)
+  have hU : ∀ x ∈ K, U x ∈ 𝓝 x := by
+    intro x hx
+    have hr0 : 0 < r₀ x := by simpa [r₀, hx] using hr x hx
+    have : (0 : ℝ) < r₀ x / 2 := by nlinarith [hr0]
+    have hmem : ball x (r₀ x / 2) ∈ 𝓝 x := ball_mem_nhds _ this
+    simpa [U] using hmem
+  rcases hK.elim_nhds_subcover U hU with ⟨T, hTK, hcover⟩
+  have hT_nonempty : T.Nonempty := by
+    by_contra ht
+    have ht_empty : T = ∅ := Finset.not_nonempty_iff_eq_empty.mp ht
+    have hcover' : K ⊆ (∅ : Set E) := by simpa [ht_empty] using hcover
+    rcases hK_nonempty with ⟨x, hx⟩
+    exact (hcover' hx).elim
+  let εmin : ℝ := (T.image (fun x => ε₀ x)).min' (Finset.image_nonempty.mpr hT_nonempty)
+  have hεmin_pos : 0 < εmin := by
+    unfold εmin
+    refine min'_image_pos_of_pos T hT_nonempty (fun x => ε₀ x) ?_
+    intro x hx_t
+    have hxK : x ∈ K := hTK x hx_t
+    simpa [ε₀, hxK] using hε x hxK
+  refine ⟨εmin, hεmin_pos, ?_⟩
+  intro x hx t₀
+  have hxcover : x ∈ ⋃ x ∈ T, U x := hcover hx
+  rcases mem_iUnion.1 hxcover with ⟨x₀, hx₀⟩
+  rcases mem_iUnion.1 hx₀ with ⟨hx₀t, hxU⟩
+  have hx₀K : x₀ ∈ K := hTK x₀ hx₀t
+  have hx_closed : x ∈ closedBall x₀ (r x₀ hx₀K) := by
+    have hx_ball : x ∈ ball x₀ (r₀ x₀ / 2) := by simpa [U] using hxU
+    have hr0 : r₀ x₀ = r x₀ hx₀K := by simp [r₀, hx₀K]
+    have hx_ball' : x ∈ ball x₀ (r x₀ hx₀K / 2) := by simpa [hr0] using hx_ball
+    exact mem_closedBall_of_mem_ball_half
+      (x := x) (x₀ := x₀) (r := r x₀ hx₀K) (le_of_lt (hr x₀ hx₀K)) hx_ball'
+  rcases H x₀ hx₀K x hx_closed t₀ with ⟨α, hαt₀, hα⟩
+  refine ⟨α, hαt₀, ?_⟩
+  intro t ht
+  have hεle : εmin ≤ ε₀ x₀ := by
+    have hximage : ε₀ x₀ ∈ T.image (fun x => ε₀ x) := by
+      exact Finset.mem_image.mpr ⟨x₀, hx₀t, rfl⟩
+    exact Finset.min'_le _ _ hximage
+  have hεle' : εmin ≤ ε x₀ hx₀K := by simpa [ε₀, hx₀K] using hεle
+  have ht' : t ∈ Ioo (t₀ - ε x₀ hx₀K) (t₀ + ε x₀ hx₀K) := by
+    constructor <;> nlinarith [ht.1, ht.2, hεle']
+  exact hα t ht'
+
 end
 
 /-! ## $C^1$ vector field -/
