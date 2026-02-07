@@ -81,8 +81,11 @@ containing `t₀`. -/
 lemma isIntegralCurveAt_iff_exists_pos :
     IsIntegralCurveAt γ v t₀ ↔ ∃ ε > 0, IsIntegralCurveOn γ v (Metric.ball t₀ ε) := by
   rw [IsIntegralCurveAt, Metric.eventually_nhds_iff_ball]
-  congrm ∃ ε > 0, ∀ (y : ℝ) (hy : y ∈ Metric.ball t₀ ε), ?_
-  exact ⟨HasDerivAt.hasDerivWithinAt, fun h ↦ h.hasDerivAt (Metric.isOpen_ball.mem_nhds hy)⟩
+  constructor
+  · rintro ⟨ε, hε, hγ⟩
+    exact ⟨ε, hε, fun t ht ↦ (hγ t ht).hasDerivWithinAt⟩
+  · rintro ⟨ε, hε, hγ⟩
+    exact ⟨ε, hε, fun t ht ↦ (hγ t ht).hasDerivAt (Metric.isOpen_ball.mem_nhds ht)⟩
 
 lemma IsIntegralCurve.isIntegralCurveAt (h : IsIntegralCurve γ v) (t : ℝ) :
     IsIntegralCurveAt γ v t :=
