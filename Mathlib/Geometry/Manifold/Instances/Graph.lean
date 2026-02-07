@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2026. All rights reserved.
+Copyright (c) 2026 Michael Lee. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Michael Lee
 -/
@@ -164,10 +164,10 @@ structure on the graph. -/
 theorem contMDiff_homeomorph {s : Set H} (f : H → E') (hf : ContinuousOn f s)
     [ChartedSpace H s] [IsManifold I n s] :
     let _ := instChartedSpace f hf
-    let _ : IsManifold I n (s.graphOn f) := instIsManifold (I := I) (n := n) (s := s) f hf
+    let _ : IsManifold I n (s.graphOn f) := instIsManifold I f hf
     ContMDiff I I n (homeomorph f hf) ∧ ContMDiff I I n (homeomorph f hf).symm := by
   letI csGraph := instChartedSpace f hf
-  letI : IsManifold I n (s.graphOn f) := instIsManifold (I := I) (n := n) (s := s) f hf
+  letI : IsManifold I n (s.graphOn f) := instIsManifold I f hf
   let h := (homeomorph f hf).toOpenPartialHomeomorph
   have hStruct :
       ChartedSpace.LiftPropOn (contDiffGroupoid n I).IsLocalStructomorphWithinAt h h.source := by
@@ -183,8 +183,7 @@ theorem contMDiff_homeomorph {s : Set H} (f : H → E') (hf : ContinuousOn f s)
     · intro y hy
       simp [e, c, h] at hy ⊢
     · simp [e, c, h]
-  simpa [h, contMDiffOn_univ] using
-    (isLocalStructomorphOn_contDiffGroupoid_iff (I := I) (n := n) h).1 hStruct
+  simpa [h, contMDiffOn_univ] using (isLocalStructomorphOn_contDiffGroupoid_iff h).1 hStruct
 
 /--
 If `s` is a `C^n` manifold and `m ≤ n`, then the inclusion map from the graph into the ambient
@@ -203,9 +202,9 @@ theorem contMDiff_subtype_val_iff {s : Set H} (f : H → E') (hf : ContinuousOn 
     ContMDiff I (modelWithCornersSelf K E') m (fun x : s ↦ f x) := by
   letI : IsManifold I m s := IsManifold.of_le hmn
   letI csGraph := instChartedSpace f hf
-  letI : IsManifold I m (s.graphOn f) := instIsManifold (I := I) (n := m) (s := s) f hf
+  letI : IsManifold I m (s.graphOn f) := instIsManifold I f hf
   have hHomeo : ContMDiff I I m (homeomorph f hf) ∧ ContMDiff I I m (homeomorph f hf).symm :=
-      contMDiff_homeomorph (I := I) (n := m) f hf
+      contMDiff_homeomorph I f hf
   -- The inclusion factors: Subtype.val = (fun x ↦ (x, f x)) ∘ homeomorph
   have factorization : (Subtype.val : s.graphOn f → H × E') =
       (fun x : s => (x.val, f x.val)) ∘ (homeomorph f hf) := by
