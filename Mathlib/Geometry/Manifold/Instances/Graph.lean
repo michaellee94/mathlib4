@@ -46,7 +46,7 @@ variable {E E' : Type*} [TopologicalSpace E] [TopologicalSpace E']
 The graph of a continuous function `f : s → E'`, viewed as a subtype of `E × E'`,
 is homeomorphic to `s` via the projection onto the first factor.
 -/
-def homeomorph {s : Set E} (f : E → E') (hf : ContinuousOn f s) :
+def homeomorph {s : Set E} {f : E → E'} (hf : ContinuousOn f s) :
     s.graphOn f ≃ₜ s where
   toFun := fun ⟨⟨x, _⟩, hx⟩ => ⟨x, (mem_graphOn.mp hx).1⟩
   invFun := fun ⟨x, hx⟩ => ⟨(x, f x), mem_graphOn.mpr ⟨hx, rfl⟩⟩
@@ -67,26 +67,23 @@ The graph of a globally continuous function `f : E → E'` is homeomorphic to `E
 
 Special case of `graphOn.homeomorph` when the domain is the whole space.
 -/
-def homeomorph' (f : E → E') (hf : Continuous f) :
-    (Set.univ.graphOn f) ≃ₜ E :=
-  (homeomorph f hf.continuousOn).trans (Homeomorph.Set.univ E)
+def homeomorph' {f : E → E'} (hf : Continuous f) : (Set.univ.graphOn f) ≃ₜ E :=
+  (homeomorph hf.continuousOn).trans (Homeomorph.Set.univ E)
 
 /--
 The inverse homeomorphism: embedding the domain into its graph.
 
 Maps `x ∈ s` to `(x, f(x)) ∈ graph(f)`.
 -/
-def toHomeomorph {s : Set E} (f : E → E') (hf : ContinuousOn f s) :
-    s ≃ₜ s.graphOn f :=
-  (homeomorph f hf).symm
+def toHomeomorph {s : Set E} {f : E → E'} (hf : ContinuousOn f s) : s ≃ₜ s.graphOn f :=
+  (homeomorph hf).symm
 
 section Manifold
 
-variable {K : Type*} [NontriviallyNormedField K]
-  {E : Type*} [NormedAddCommGroup E] [NormedSpace K E]
-  {E' : Type*} [NormedAddCommGroup E'] [NormedSpace K E']
-  {H : Type*} [TopologicalSpace H]
-  (I : ModelWithCorners K E H)
+variable {𝕜 : Type*} [NontriviallyNormedField 𝕜]
+  {E : Type*} [NormedAddCommGroup E] [NormedSpace 𝕜 E]
+  {E' : Type*} [NormedAddCommGroup E'] [NormedSpace 𝕜 E']
+  {H : Type*} [TopologicalSpace H] (I : ModelWithCorners 𝕜 E H)
   {n : WithTop ℕ∞}
 
 /--
@@ -95,39 +92,35 @@ The graph of a continuous function inherits a `ChartedSpace` structure from the 
 Given `f : H → E'` continuous on `s ⊆ H`, the graph `s.graphOn f` is charted over `H`
 by composing charts of `s` with the homeomorphism from graph to `s`.
 -/
-def instChartedSpace {s : Set H} (f : H → E') (hf : ContinuousOn f s)
+def instChartedSpace {s : Set H} {f : H → E'} (hf : ContinuousOn f s)
     [cs : ChartedSpace H s] : ChartedSpace H (s.graphOn f) where
-  atlas := { (homeomorph f hf).toOpenPartialHomeomorph.trans e | e ∈ cs.atlas }
-  chartAt x := (homeomorph f hf).toOpenPartialHomeomorph.trans
-    (cs.chartAt (homeomorph f hf x))
+  atlas := { (homeomorph hf).toOpenPartialHomeomorph.trans e | e ∈ cs.atlas }
+  chartAt x := (homeomorph hf).toOpenPartialHomeomorph.trans
+    (cs.chartAt (homeomorph hf x))
   mem_chart_source x := by
-    rw [OpenPartialHomeomorph.trans_source, Homeomorph.toOpenPartialHomeomorph_source,
-        mem_inter_iff]
-    exact ⟨mem_univ _, mem_chart_source H (homeomorph f hf x)⟩
+    simp
   chart_mem_atlas x := by
     simp only [mem_setOf_eq]
-    exact ⟨cs.chartAt (homeomorph f hf x), cs.chart_mem_atlas _, rfl⟩
+    exact ⟨cs.chartAt (homeomorph hf x), cs.chart_mem_atlas _, rfl⟩
 
-omit [NormedSpace K E'] in
+omit [NormedSpace 𝕜 E'] in
 /--
 The graph of a continuous function on a manifold is itself a manifold.
 
 This follows from the fact that the graph is homeomorphic to the domain,
 so chart transitions factor through the homeomorphism which cancels.
 -/
-theorem instIsManifold {s : Set H} (f : H → E') (hf : ContinuousOn f s)
+theorem instIsManifold {s : Set H} {f : H → E'} (hf : ContinuousOn f s)
     [ChartedSpace H s] [IsManifold I n s] :
-    @IsManifold K _ E _ _ H _ I n (s.graphOn f) _ (instChartedSpace f hf) := by
-  letI csGraph := instChartedSpace f hf
+    let _ := instChartedSpace hf
+    IsManifold I n (s.graphOn f) := by
+  letI csGraph := instChartedSpace hf
   have compat : ∀ {e e' : OpenPartialHomeomorph (s.graphOn f) H},
       e ∈ csGraph.atlas → e' ∈ csGraph.atlas → e.symm.trans e' ∈ contDiffGroupoid n I := by
-    intro e e' he he'
-    simp only [csGraph, instChartedSpace, mem_setOf_eq] at he he'
-    obtain ⟨e0, he0_mem, rfl⟩ := he
-    obtain ⟨e0', he0'_mem, rfl⟩ := he'
+    rintro e e' ⟨e0, he0_mem, rfl⟩ ⟨e0', he0'_mem, rfl⟩
     have h_grp := (contDiffGroupoid n I).compatible he0_mem he0'_mem
     apply (contDiffGroupoid n I).mem_of_eqOnSource h_grp
-    let gH := homeomorph f hf
+    let gH := homeomorph hf
     constructor
     · -- source equality
       ext x
@@ -144,42 +137,40 @@ theorem instIsManifold {s : Set H} (f : H → E') (hf : ContinuousOn f s)
         · exact hx1.1
         · convert hx2 using 1
       · intro ⟨hx1, hx2⟩
-        constructor
-        · exact ⟨hx1, trivial⟩
-        · simp only [OpenPartialHomeomorph.trans_apply,
-                     Homeomorph.toOpenPartialHomeomorph_symm_apply]
-          exact hx2
+        refine ⟨⟨hx1, trivial⟩, ?_⟩
+        simpa only [OpenPartialHomeomorph.trans_apply,
+          Homeomorph.toOpenPartialHomeomorph_symm_apply] using hx2
     · -- function equality on source
       intro x hx
       simp only [OpenPartialHomeomorph.trans_symm_eq_symm_trans_symm,
                  OpenPartialHomeomorph.trans_apply,
                  Homeomorph.toOpenPartialHomeomorph_symm_apply,
                  Homeomorph.toOpenPartialHomeomorph_apply, Homeomorph.apply_symm_apply]
-  haveI : @HasGroupoid H _ (s.graphOn f) _ csGraph (contDiffGroupoid n I) := ⟨compat⟩
-  exact @IsManifold.mk' K _ E _ _ H _ I n (s.graphOn f) _ csGraph this
+  haveI : HasGroupoid (H := H) (M := s.graphOn f) (contDiffGroupoid n I) := ⟨compat⟩
+  exact IsManifold.mk' I n (s.graphOn f)
 
-omit [NormedSpace K E'] in
+omit [NormedSpace 𝕜 E'] in
 /-- Smoothness of the graph-domain homeomorphism and its inverse for the induced manifold
 structure on the graph. -/
-theorem contMDiff_homeomorph {s : Set H} (f : H → E') (hf : ContinuousOn f s)
+theorem contMDiff_homeomorph {s : Set H} {f : H → E'} (hf : ContinuousOn f s)
     [ChartedSpace H s] [IsManifold I n s] :
-    let _ := instChartedSpace f hf
-    let _ : IsManifold I n (s.graphOn f) := instIsManifold I f hf
-    ContMDiff I I n (homeomorph f hf) ∧ ContMDiff I I n (homeomorph f hf).symm := by
-  letI csGraph := instChartedSpace f hf
-  letI : IsManifold I n (s.graphOn f) := instIsManifold I f hf
-  let h := (homeomorph f hf).toOpenPartialHomeomorph
+    let _ := instChartedSpace hf
+    let _ : IsManifold I n (s.graphOn f) := instIsManifold I hf
+    ContMDiff I I n (homeomorph hf) ∧ ContMDiff I I n (homeomorph hf).symm := by
+  letI csGraph := instChartedSpace hf
+  letI : IsManifold I n (s.graphOn f) := instIsManifold I hf
+  let h := (homeomorph hf).toOpenPartialHomeomorph
   have hStruct :
       ChartedSpace.LiftPropOn (contDiffGroupoid n I).IsLocalStructomorphWithinAt h h.source := by
     intro x hx
-    refine ⟨h.continuousAt hx |>.continuousWithinAt, ?_⟩
-    intro hx'
+    refine ⟨h.continuousAt hx |>.continuousWithinAt, fun hx' => ?_⟩
     let c : OpenPartialHomeomorph s H := chartAt H (h x)
     let e : OpenPartialHomeomorph H H := (chartAt H x).symm.trans (h.trans c)
     refine ⟨e, ?_, ?_, ?_⟩
-    · exact (contDiffGroupoid n I).compatible (chart_mem_atlas (H := H) x) (by
+    · exact (contDiffGroupoid n I).compatible (chart_mem_atlas H x) (by
         dsimp [h, c]
-        exact ⟨chartAt H (homeomorph f hf x), chart_mem_atlas (H := H) (homeomorph f hf x), rfl⟩)
+        exact ⟨chartAt H (homeomorph hf x),
+          chart_mem_atlas H (homeomorph hf x), rfl⟩)
     · intro y hy
       simp [e, c, h] at hy ⊢
     · simp [e, c, h]
@@ -193,24 +184,25 @@ This characterizes when the graph, with the manifold structure inherited from th
 is a `C^m` submanifold of the product space `H × E'`, assuming
 `Subtype.val : s → H` is `C^m`.
 -/
-theorem contMDiff_subtype_val_iff {s : Set H} (f : H → E') (hf : ContinuousOn f s)
+theorem contMDiff_subtype_val_iff {s : Set H} {f : H → E'} (hf : ContinuousOn f s)
     {m n : WithTop ℕ∞} [ChartedSpace H s] [IsManifold I n s] (hmn : m ≤ n)
     (hval : ContMDiff I I m (Subtype.val : s → H)) :
-    let _ := instChartedSpace f hf
-    ContMDiff I (I.prod (modelWithCornersSelf K E')) m
+    let _ := instChartedSpace hf
+    ContMDiff I (I.prod (modelWithCornersSelf 𝕜 E')) m
       (Subtype.val : s.graphOn f → H × E') ↔
-    ContMDiff I (modelWithCornersSelf K E') m (fun x : s ↦ f x) := by
+    ContMDiff I (modelWithCornersSelf 𝕜 E') m (fun x : s ↦ f x) := by
   letI : IsManifold I m s := IsManifold.of_le hmn
-  letI csGraph := instChartedSpace f hf
-  letI : IsManifold I m (s.graphOn f) := instIsManifold I f hf
-  have hHomeo : ContMDiff I I m (homeomorph f hf) ∧ ContMDiff I I m (homeomorph f hf).symm :=
-      contMDiff_homeomorph I f hf
+  letI csGraph := instChartedSpace hf
+  letI : IsManifold I m (s.graphOn f) := instIsManifold I hf
+  have hHomeo :
+      ContMDiff I I m (homeomorph hf) ∧
+        ContMDiff I I m (homeomorph hf).symm :=
+      contMDiff_homeomorph I hf
   -- The inclusion factors: Subtype.val = (fun x ↦ (x, f x)) ∘ homeomorph
   have factorization : (Subtype.val : s.graphOn f → H × E') =
-      (fun x : s => (x.val, f x.val)) ∘ (homeomorph f hf) := by
-    ext z <;> rcases z with ⟨⟨x, y⟩, hxy⟩
-    · rfl
-    · simpa [Function.comp_apply, homeomorph] using (mem_graphOn.mp hxy).2.symm
+      (fun x : s => (x.val, f x.val)) ∘ (homeomorph hf) := by
+    ext z <;> rcases z with ⟨⟨x, y⟩, hxy⟩ <;>
+      simp [Function.comp_apply, homeomorph, (mem_graphOn.mp hxy).2]
   rw [factorization]
   constructor
   · intro h
