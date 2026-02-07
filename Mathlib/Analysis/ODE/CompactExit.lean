@@ -77,10 +77,10 @@ private theorem eqOn_inter_of_local_uniqueness
     (hαt : α t = φ t) (htI : t ∈ I) (hε : 0 < ε) :
     EqOn φ α (I ∩ Ioo (t - ε) (t + ε)) := by
   let K_int : Set ℝ := I ∩ Ioo (t - ε) (t + ε)
-  have hK_open : IsOpen K_int := h.isOpen.inter isOpen_Ioo
+  have hK_open : IsOpen K_int := h.isOpen_domain.inter isOpen_Ioo
   have htK_int : t ∈ K_int := ⟨htI, by constructor <;> linarith [hε]⟩
   have hK_conn : IsConnected K_int := by
-    have hI_ord : OrdConnected I := h.isConnected.isPreconnected.ordConnected
+    have hI_ord : OrdConnected I := h.isConnected_domain.isPreconnected.ordConnected
     have hIoo_ord : OrdConnected (Ioo (t - ε) (t + ε)) := ordConnected_Ioo
     have hK_ord : OrdConnected K_int := OrdConnected.inter hI_ord hIoo_ord
     exact ⟨⟨t, htK_int⟩, hK_ord.isPreconnected⟩
@@ -102,7 +102,7 @@ private theorem eqOn_inter_of_local_uniqueness
       simp only [Prod.edist_eq, edist_self, max_eq_right (zero_le _)] at hLip
       exact hLip
     have hφ_cont : ContinuousAt φ s := by
-      have hderiv := (h.deriv s hs.1).hasDerivAt (h.isOpen.mem_nhds hs.1)
+      have hderiv := (h.isIntegralCurveOn s hs.1).hasDerivAt (h.isOpen_domain.mem_nhds hs.1)
       exact hderiv.continuousAt
     have hα_cont : ContinuousAt α s := (hα s hs.2).continuousAt
     have hφ_mem : ∀ᶠ t' in 𝓝 s, (t', φ t') ∈ U := by
@@ -114,12 +114,12 @@ private theorem eqOn_inter_of_local_uniqueness
       have hprod_cont : ContinuousAt (fun t' => (t', α t')) s :=
         continuousAt_id.prodMk hα_cont
       exact hprod_cont.preimage_mem_nhds hU'
-    have hI_mem : ∀ᶠ t' in 𝓝 s, t' ∈ I := h.isOpen.mem_nhds hs.1
+    have hI_mem : ∀ᶠ t' in 𝓝 s, t' ∈ I := h.isOpen_domain.mem_nhds hs.1
     have hIoo_mem : ∀ᶠ u in 𝓝 s, u ∈ Ioo (t - ε) (t + ε) := isOpen_Ioo.mem_nhds hs.2
     have hφ_deriv : ∀ᶠ u in 𝓝 s, HasDerivAt φ (v u (φ u)) u := by
       refine hI_mem.mono ?_
       intro u huI
-      exact (h.deriv u huI).hasDerivAt (h.isOpen.mem_nhds huI)
+      exact (h.isIntegralCurveOn u huI).hasDerivAt (h.isOpen_domain.mem_nhds huI)
     have hα_deriv : ∀ᶠ u in 𝓝 s, HasDerivAt α (v u (α u)) u := by
       refine hIoo_mem.mono ?_
       intro u huIoo
@@ -141,7 +141,7 @@ private theorem eqOn_inter_of_local_uniqueness
       rintro t' ⟨ht'K, ht'Eq⟩
       exact ⟨ht'K, ht'Eq⟩
     exact hS_nhds
-  have hφ_cont_on : ContinuousOn φ K_int := h.deriv.continuousOn.mono (fun _ hx => hx.1)
+  have hφ_cont_on : ContinuousOn φ K_int := h.isIntegralCurveOn.continuousOn.mono (fun _ hx => hx.1)
   have hα_cont_on : ContinuousOn α K_int := by
     intro s hs
     exact (hα s hs.2).continuousAt.continuousWithinAt
@@ -184,9 +184,9 @@ private theorem splice_integralCurveOn_union
   intro s hs
   by_cases hsI : s ∈ I
   · have hφ_deriv : HasDerivAt φ (v s (φ s)) s :=
-      (h.deriv s hsI).hasDerivAt (h.isOpen.mem_nhds hsI)
+      (h.isIntegralCurveOn s hsI).hasDerivAt (h.isOpen_domain.mem_nhds hsI)
     have h_eq : (fun s => if s ∈ I then φ s else α s) =ᶠ[𝓝 s] φ := by
-      filter_upwards [h.isOpen.mem_nhds hsI] with y hyI
+      filter_upwards [h.isOpen_domain.mem_nhds hsI] with y hyI
       simp [hyI]
     have h' : HasDerivAt (fun s => if s ∈ I then φ s else α s)
         (v s ((fun s => if s ∈ I then φ s else α s) s)) s := by
@@ -219,12 +219,13 @@ private theorem contradiction_from_strict_extension_right
   classical
   let J : Set ℝ := I ∪ Ioo (t - ε) (t + ε)
   let g : ℝ → E := fun s => if s ∈ I then φ s else α s
-  have hJ_open : IsOpen J := h.isOpen.union isOpen_Ioo
+  have hJ_open : IsOpen J := h.isOpen_domain.union isOpen_Ioo
   have hJ_conn : IsConnected J := by
     have h_inter_nonempty : (I ∩ Ioo (t - ε) (t + ε)).Nonempty := by
       refine ⟨t, htI, ?_⟩
       exact ⟨by nlinarith [hε], by nlinarith [hε]⟩
-    exact IsConnected.union h_inter_nonempty h.isConnected (isConnected_Ioo (by nlinarith [hε]))
+    exact IsConnected.union
+      h_inter_nonempty h.isConnected_domain (isConnected_Ioo (by nlinarith [hε]))
   have hJ_curve : IsIntegralCurveOn g v J := by
     simpa [g, J] using splice_integralCurveOn_union (h := h) hα h_eq_on
   have hEq : EqOn φ g I := by
@@ -238,7 +239,7 @@ private theorem contradiction_from_strict_extension_right
     · have ht_close : sSup I - ε / 2 < t := ht_gt_eps
       nlinarith [ht_close]
   rcases hsup with ⟨t', ht'J, ht'_sup⟩
-  have h_eq : I = J := h.is_maximal g J hJ_curve hJ_open hJ_conn (subset_union_left) hEq
+  have h_eq : I = J := h.isMaximal g J hJ_curve hJ_open hJ_conn (subset_union_left) hEq
   have ht_le : t' ≤ sSup I := by
     have : t' ∈ I := by simpa [h_eq] using ht'J
     exact le_csSup hI this
@@ -804,10 +805,10 @@ theorem IsMaximalODESolutionWithin.of_leavesEveryCompact
     simpa [v] using h_locLip0
   have hmax : IsMaximalODESolution v φ I := by
     refine
-      { isConnected := h_conn
-        isOpen := h_open
-        deriv := h_curve
-        is_maximal := by
+      { isConnected_domain := h_conn
+        isOpen_domain := h_open
+        isIntegralCurveOn := h_curve
+        isMaximal := by
           intro g J h_g_curve h_J_open h_J_conn h_sub h_eq
           by_contra h_ne
           have h_ssub : I ⊂ J := HasSubset.Subset.ssubset_of_ne h_sub h_ne
@@ -896,8 +897,8 @@ private theorem preimage_compact_subset_time_strip
     {t : I | (t.1, φ t.1) ∈ K} ⊆ ((Subtype.val : I → ℝ) ⁻¹' Icc lL lR) := by
   intro t htA
   have htI : ((t : I) : ℝ) ∈ I := t.property
-  have ht_lt : ((t : I) : ℝ) < sSup I := lt_csSup_of_mem_of_isOpen h.isOpen hI htI
-  have ht_gt : sInf I < ((t : I) : ℝ) := csInf_lt_of_mem_of_isOpen h.isOpen hI' htI
+  have ht_lt : ((t : I) : ℝ) < sSup I := lt_csSup_of_mem_of_isOpen h.isOpen_domain hI htI
+  have ht_gt : sInf I < ((t : I) : ℝ) := csInf_lt_of_mem_of_isOpen h.isOpen_domain hI' htI
   have ht_le : ((t : I) : ℝ) ≤ lR := by
     by_contra hlt
     have hlt' : lR < ((t : I) : ℝ) := lt_of_not_ge hlt
@@ -974,7 +975,7 @@ theorem IsMaximalODESolutionWithin.isProperExtendedCurve_time_dependent_locallyL
     (p:=fun t => t ∈ I → (t, φ t) ∉ K)).1 hEventL with ⟨lL, hlL, hL⟩
   let coeI : I → ℝ := Subtype.val
   let A : Set I := {t | (coeI t, φ t) ∈ K}
-  have hφ_cont : Continuous (fun t : I => φ t) := (h.deriv.continuousOn).restrict
+  have hφ_cont : Continuous (fun t : I => φ t) := (h.isIntegralCurveOn.continuousOn).restrict
   have hcont : Continuous (fun t : I => (coeI t, φ t)) :=
     (continuous_subtype_val : Continuous coeI).prodMk hφ_cont
   have hA_closed : IsClosed A := by
@@ -986,7 +987,7 @@ theorem IsMaximalODESolutionWithin.isProperExtendedCurve_time_dependent_locallyL
   have hIcc_sub : Icc lL lR ⊆ I := by
     rcases (csInf_lt_iff hI' hI_nonempty).1 hlL with ⟨tL, htL, htL_lt⟩
     rcases (lt_csSup_iff hI hI_nonempty).1 hlR with ⟨tR, htR, htR_lt⟩
-    have hI_ord : OrdConnected I := h.isConnected.isPreconnected.ordConnected
+    have hI_ord : OrdConnected I := h.isConnected_domain.isPreconnected.ordConnected
     have hIcc_tLtR : Icc tL tR ⊆ I := by
       intro x hx
       exact hI_ord.out htL htR hx
@@ -1036,21 +1037,21 @@ private theorem not_bddAbove_of_linear_growth_within_univ
   have hI_nonempty' : I.Nonempty := ⟨t0, ht0⟩
   have ht_lt_sup : ∀ {t : ℝ}, t ∈ I → t < sSup I := by
     intro t htI
-    exact lt_csSup_of_mem_of_isOpen h.isOpen hI htI
+    exact lt_csSup_of_mem_of_isOpen h.isOpen_domain hI htI
   have ht0_lt : t0 < sSup I := ht_lt_sup ht0
   let R : ℝ := gronwallBound ‖φ t0‖ K C (sSup I - t0)
   have h_bound : ∀ t ∈ I, t0 ≤ t → ‖φ t‖ ≤ R := by
     intro t htI ht0t
-    have hI_ord : OrdConnected I := h.isConnected.isPreconnected.ordConnected
+    have hI_ord : OrdConnected I := h.isConnected_domain.isPreconnected.ordConnected
     have hIcc : Icc t0 t ⊆ I := by
       intro x hx
       exact hI_ord.out ht0 htI hx
-    have hcont : ContinuousOn φ (Icc t0 t) := h.deriv.continuousOn.mono hIcc
+    have hcont : ContinuousOn φ (Icc t0 t) := h.isIntegralCurveOn.continuousOn.mono hIcc
     have hderiv :
         ∀ x ∈ Ico t0 t, HasDerivWithinAt φ (f (φ x)) (Ici x) x := by
       intro x hx
       have hxI : x ∈ I := hIcc ⟨hx.1, le_of_lt hx.2⟩
-      have h' := (h.deriv x hxI).hasDerivAt (h.isOpen.mem_nhds hxI)
+      have h' := (h.isIntegralCurveOn x hxI).hasDerivAt (h.isOpen_domain.mem_nhds hxI)
       exact h'.hasDerivWithinAt
     have hG := norm_le_gronwallBound_of_norm_deriv_right_le
       hcont hderiv (by exact le_rfl)
@@ -1112,7 +1113,7 @@ private theorem not_bddAbove_of_linear_growth_within_univ
   set l := max l_exit l_bound
   have hl : l < sSup I := max_lt_iff.mpr ⟨hl_exit, hl_bound⟩
   rcases (lt_csSup_iff (s := I) hI hI_nonempty').1 hl with ⟨t, htI, hlt⟩
-  have ht_lt : t < sSup I := lt_csSup_of_mem_of_isOpen h.isOpen hI htI
+  have ht_lt : t < sSup I := lt_csSup_of_mem_of_isOpen h.isOpen_domain hI htI
   have ht_exit : l_exit < t := lt_of_le_of_lt (le_max_left _ _) hlt
   have ht_bound : l_bound < t := lt_of_le_of_lt (le_max_right _ _) hlt
   have h_out := h_exit t ⟨ht_exit, ht_lt⟩ htI
@@ -1251,7 +1252,7 @@ private theorem contradiction_of_trapped_assumptions_at_eventual_point
     (h_dist : ∀ t ∈ I, δ ≤ infDist (φ t) Uᶜ) :
     False := by
   rcases (lt_csSup_iff hI hI_nonempty).1 hl with ⟨t, htI, hlt⟩
-  have ht_lt : t < sSup I := lt_csSup_of_mem_of_isOpen h.isOpen hI htI
+  have ht_lt : t < sSup I := lt_csSup_of_mem_of_isOpen h.isOpen_domain hI htI
   have hescape := hl_prop t ⟨hlt, ht_lt⟩ htI
   have hnot_norm : ¬ R < ‖φ t‖ := not_lt_of_ge (h_bound t htI)
   have hnot_dist : ¬ infDist (φ t) Uᶜ < δ := not_lt_of_ge (h_dist t htI)
