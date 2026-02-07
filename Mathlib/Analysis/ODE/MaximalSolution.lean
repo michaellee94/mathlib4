@@ -214,6 +214,10 @@ lemma deriv
     IsIntegralCurveOnWithin f U v I :=
   ⟨h.mapsTo, h.toIsMaximal.deriv⟩
 
+/-- Specialization of `IsMaximalODESolutionWithin` to `U = univ`.
+
+When the domain constraint is the whole space, the `Within` notion is equivalent to the usual
+notion of maximal ODE solution. -/
 theorem univ_iff {v : ℝ → E → E} {f : ℝ → E} {I : Set ℝ} :
     IsMaximalODESolutionWithin
         (U := (Set.univ : Set (ℝ × E)))
