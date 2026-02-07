@@ -55,7 +55,7 @@ variable (v : ℝ → E → E) (t₀ : ℝ) (x₀ : E)
 
 /--
 If two solutions `f₁` and `f₂` to the ODE `y' = v(t,y)` pass through the same point `(t₀, x₀)`,
-and `v(t,·)` is Lipschitz continuous with a uniform constant `K_const` for `x ∈ univ E`
+and `v(t,·)` is Lipschitz continuous with a uniform constant `K` for `x ∈ univ E`
 for all `t` in the intersection of their domains `I₁ ∩ I₂`, then `f₁` and `f₂` agree on this
 entire intersection. This is a standard uniqueness result derived from Gronwall's inequality.
 -/
@@ -67,108 +67,82 @@ lemma IsIntegralCurveOn.eqOn_of_agree_at_t₀_of_lipschitz
     (h₁_conn : IsConnected I₁) (h₂_conn : IsConnected I₂)
     (ht₀₁ : t₀ ∈ I₁) (ht₀₂ : t₀ ∈ I₂)
     (heq_at_t₀ : f₁ t₀ = f₂ t₀)
-    (K_const : ℝ≥0)
-    (h_lipschitz : ∀ (t_val : ℝ) (_ : t_val ∈ I₁ ∩ I₂), LipschitzWith K_const (v t_val)) :
+    {K : ℝ≥0}
+    (h_lipschitz : ∀ t ∈ I₁ ∩ I₂, LipschitzWith K (v t)) :
     EqOn f₁ f₂ (I₁ ∩ I₂) := by
-  -- Let K_int be the intersection of the solution domains.
   let K_int := I₁ ∩ I₂
   have ht₀_mem_K_int : t₀ ∈ K_int := ⟨ht₀₁, ht₀₂⟩
   have hK_int_nonempty : K_int.Nonempty := ⟨t₀, ht₀_mem_K_int⟩
-  -- The intersection K_int is an open interval because I₁ and I₂ are open intervals containing t₀.
   have hK_int_conn : IsConnected K_int := by
     have h₁_ord : OrdConnected I₁ := h₁_conn.isPreconnected.ordConnected
     have h₂_ord : OrdConnected I₂ := h₂_conn.isPreconnected.ordConnected
     have hK_int_ord : OrdConnected K_int := OrdConnected.inter h₁_ord h₂_ord
     exact ⟨hK_int_nonempty, hK_int_ord.isPreconnected⟩
-  -- To show f₁ and f₂ agree on K_int, consider any point t' ∈ K_int.
   intro t' ht'_in_K_int
-  -- The proof splits based on the order of t₀ and t'.
   rcases le_total t₀ t' with h_t₀_le_t' | h_t'_le_t₀
-  · -- Case 1: t₀ ≤ t'. Apply uniqueness on the closed interval J = [t₀, t'].
+  · -- Forward-time case: apply uniqueness on `[t₀, t']`.
     let J := Icc t₀ t'
-    -- J is contained in K_int because K_int is an interval containing both t₀ and t'.
     have hJ_sub_K_int : J ⊆ K_int := by
       intro j hj_in_J
       exact hK_int_conn.isPreconnected.ordConnected.out ht₀_mem_K_int ht'_in_K_int hj_in_J
-    -- The Lipschitz condition on v holds for t ∈ Ico t₀ t' (required by uniqueness theorem).
-    have hv_J : ∀ (t_val : ℝ) (ht_val : t_val ∈ Ico t₀ t'),
-        LipschitzOnWith K_const (v t_val) univ := by
-      intro t_val ht_val_in_Ico
-      exact (h_lipschitz t_val (hJ_sub_K_int (mem_Icc_of_Ico ht_val_in_Ico))).lipschitzOnWith
-    -- Verify conditions for ODE_solution_unique_of_mem_Icc_right for f₁.
+    have hv_J : ∀ t ∈ Ico t₀ t', LipschitzOnWith K (v t) univ := by
+      intro t ht_in_Ico
+      exact (h_lipschitz t (hJ_sub_K_int (mem_Icc_of_Ico ht_in_Ico))).lipschitzOnWith
     have hf₁_cont_J : ContinuousOn f₁ J :=
       (h₁.continuousOn).mono (Subset.trans hJ_sub_K_int inter_subset_left)
-    have hf₁'_deriv_J : ∀ (t_val : ℝ) (ht_val : t_val ∈ Ico t₀ t'),
-        HasDerivWithinAt f₁ (v t_val (f₁ t_val)) (Ici t_val) t_val := by
-      intro t_val ht_val_in_Ico
-      have ht_val_in_I₁ : t_val ∈ I₁ :=
-        (Subset.trans hJ_sub_K_int inter_subset_left (mem_Icc_of_Ico ht_val_in_Ico))
-      have deriv_at := (h₁ t_val ht_val_in_I₁).hasDerivAt (h₁_open.mem_nhds ht_val_in_I₁)
+    have hf₁'_deriv_J : ∀ t ∈ Ico t₀ t', HasDerivWithinAt f₁ (v t (f₁ t)) (Ici t) t := by
+      intro t ht_in_Ico
+      have ht_in_I₁ : t ∈ I₁ :=
+        (Subset.trans hJ_sub_K_int inter_subset_left (mem_Icc_of_Ico ht_in_Ico))
+      have deriv_at := (h₁ t ht_in_I₁).hasDerivAt (h₁_open.mem_nhds ht_in_I₁)
       exact deriv_at.hasDerivWithinAt
-    have hf₁s_univ_J :
-      ∀ (t_val : ℝ) (ht_val : t_val ∈ Ico t₀ t'), f₁ t_val ∈ univ := fun _ _ => trivial
-    -- Verify conditions for ODE_solution_unique_of_mem_Icc_right for f₂.
+    have hf₁s_univ_J : ∀ t ∈ Ico t₀ t', f₁ t ∈ univ := fun _ _ => trivial
     have hf₂_cont_J : ContinuousOn f₂ J :=
       (h₂.continuousOn).mono (Subset.trans hJ_sub_K_int inter_subset_right)
-    have hf₂'_deriv_J : ∀ (t_val : ℝ) (ht_val : t_val ∈ Ico t₀ t'),
-        HasDerivWithinAt f₂ (v t_val (f₂ t_val)) (Ici t_val) t_val := by
-      intro t_val ht_val_in_Ico
-      have ht_val_in_I₂ : t_val ∈ I₂ :=
-        (Subset.trans hJ_sub_K_int inter_subset_right (mem_Icc_of_Ico ht_val_in_Ico))
-      have deriv_at := (h₂ t_val ht_val_in_I₂).hasDerivAt (h₂_open.mem_nhds ht_val_in_I₂)
+    have hf₂'_deriv_J : ∀ t ∈ Ico t₀ t', HasDerivWithinAt f₂ (v t (f₂ t)) (Ici t) t := by
+      intro t ht_in_Ico
+      have ht_in_I₂ : t ∈ I₂ :=
+        (Subset.trans hJ_sub_K_int inter_subset_right (mem_Icc_of_Ico ht_in_Ico))
+      have deriv_at := (h₂ t ht_in_I₂).hasDerivAt (h₂_open.mem_nhds ht_in_I₂)
       exact deriv_at.hasDerivWithinAt
-    have hf₂s_univ_J :
-      ∀ (t_val : ℝ) (ht_val : t_val ∈ Ico t₀ t'), f₂ t_val ∈ univ := fun _ _ => trivial
-    -- Apply the uniqueness theorem.
+    have hf₂s_univ_J : ∀ t ∈ Ico t₀ t', f₂ t ∈ univ := fun _ _ => trivial
     replace heq_at_t₀ : f₁ t₀ = f₂ t₀ := heq_at_t₀
     have eq_on_J := ODE_solution_unique_of_mem_Icc_right hv_J
                       hf₁_cont_J hf₁'_deriv_J hf₁s_univ_J
                       hf₂_cont_J hf₂'_deriv_J hf₂s_univ_J
                       heq_at_t₀
-    -- Since t' ∈ J, f₁(t') = f₂(t').
     exact eq_on_J (right_mem_Icc.mpr h_t₀_le_t')
-  · -- Case 2: t' < t₀. Apply uniqueness on the closed interval J = [t', t₀].
+  · -- Backward-time case: apply uniqueness on `[t', t₀]`.
     let J := Icc t' t₀
-    -- J is contained in K_int.
     have hJ_sub_K_int : J ⊆ K_int := by
       intro j hj_in_J
       exact hK_int_conn.isPreconnected.ordConnected.out ht'_in_K_int ht₀_mem_K_int hj_in_J
-    -- The Lipschitz condition on v holds for t ∈ Ioc t' t₀.
-    have hv_J : ∀ (t_val : ℝ) (ht_val : t_val ∈ Ioc t' t₀),
-        LipschitzOnWith K_const (v t_val) univ := by
-      intro t_val ht_val_in_Ioc
-      exact (h_lipschitz t_val (hJ_sub_K_int (mem_Icc_of_Ioc ht_val_in_Ioc))).lipschitzOnWith
-    -- Verify conditions for ODE_solution_unique_of_mem_Icc_left for f₁.
+    have hv_J : ∀ t ∈ Ioc t' t₀, LipschitzOnWith K (v t) univ := by
+      intro t ht_in_Ioc
+      exact (h_lipschitz t (hJ_sub_K_int (mem_Icc_of_Ioc ht_in_Ioc))).lipschitzOnWith
     have hf₁_cont_J : ContinuousOn f₁ J :=
       (h₁.continuousOn).mono (Subset.trans hJ_sub_K_int inter_subset_left)
-    have hf₁'_deriv_J : ∀ (t_val : ℝ) (ht_val : t_val ∈ Ioc t' t₀),
-        HasDerivWithinAt f₁ (v t_val (f₁ t_val)) (Iic t_val) t_val := by
-      intro t_val ht_val_in_Ioc
-      have ht_val_in_I₁ : t_val ∈ I₁ :=
-        (Subset.trans hJ_sub_K_int inter_subset_left (mem_Icc_of_Ioc ht_val_in_Ioc))
-      have deriv_at := (h₁ t_val ht_val_in_I₁).hasDerivAt (h₁_open.mem_nhds ht_val_in_I₁)
+    have hf₁'_deriv_J : ∀ t ∈ Ioc t' t₀, HasDerivWithinAt f₁ (v t (f₁ t)) (Iic t) t := by
+      intro t ht_in_Ioc
+      have ht_in_I₁ : t ∈ I₁ :=
+        (Subset.trans hJ_sub_K_int inter_subset_left (mem_Icc_of_Ioc ht_in_Ioc))
+      have deriv_at := (h₁ t ht_in_I₁).hasDerivAt (h₁_open.mem_nhds ht_in_I₁)
       exact deriv_at.hasDerivWithinAt
-    have hf₁s_univ_J :
-      ∀ (t_val : ℝ) (ht_val : t_val ∈ Ioc t' t₀), f₁ t_val ∈ univ := fun _ _ => trivial
-    -- Verify conditions for ODE_solution_unique_of_mem_Icc_left for f₂.
+    have hf₁s_univ_J : ∀ t ∈ Ioc t' t₀, f₁ t ∈ univ := fun _ _ => trivial
     have hf₂_cont_J : ContinuousOn f₂ J :=
       (h₂.continuousOn).mono (Subset.trans hJ_sub_K_int inter_subset_right)
-    have hf₂'_deriv_J : ∀ (t_val : ℝ) (ht_val : t_val ∈ Ioc t' t₀),
-        HasDerivWithinAt f₂ (v t_val (f₂ t_val)) (Iic t_val) t_val := by
-      intro t_val ht_val_in_Ioc
-      have ht_val_in_I₂ : t_val ∈ I₂ :=
-        (Subset.trans hJ_sub_K_int inter_subset_right (mem_Icc_of_Ioc ht_val_in_Ioc))
-      have deriv_at := (h₂ t_val ht_val_in_I₂).hasDerivAt (h₂_open.mem_nhds ht_val_in_I₂)
+    have hf₂'_deriv_J : ∀ t ∈ Ioc t' t₀, HasDerivWithinAt f₂ (v t (f₂ t)) (Iic t) t := by
+      intro t ht_in_Ioc
+      have ht_in_I₂ : t ∈ I₂ :=
+        (Subset.trans hJ_sub_K_int inter_subset_right (mem_Icc_of_Ioc ht_in_Ioc))
+      have deriv_at := (h₂ t ht_in_I₂).hasDerivAt (h₂_open.mem_nhds ht_in_I₂)
       exact deriv_at.hasDerivWithinAt
-    have hf₂s_univ_J :
-      ∀ (t_val : ℝ) (ht_val : t_val ∈ Ioc t' t₀), f₂ t_val ∈ univ := fun _ _ => trivial
-    -- Apply the uniqueness theorem (solutions agree at the right endpoint t₀).
+    have hf₂s_univ_J : ∀ t ∈ Ioc t' t₀, f₂ t ∈ univ := fun _ _ => trivial
     replace heq_at_t₀ : f₁ t₀ = f₂ t₀ := heq_at_t₀
     have eq_on_J := ODE_solution_unique_of_mem_Icc_left hv_J
                       hf₁_cont_J hf₁'_deriv_J hf₁s_univ_J
                       hf₂_cont_J hf₂'_deriv_J hf₂s_univ_J
                       heq_at_t₀
-    -- Since t' ∈ J, f₁(t') = f₂(t').
     exact eq_on_J (left_mem_Icc.mpr h_t'_le_t₀)
 
 /--
@@ -178,14 +152,14 @@ hypotheses in the theorems below.
 -/
 structure IsMaximalODESolution (v : ℝ → E → E) (f : ℝ → E) (I : Set ℝ) : Prop where
   /-- The domain `I` must be an open set. -/
-  isOpen : IsOpen I
+  isOpen_domain : IsOpen I
   /-- The domain `I` must be connected. -/
-  isConnected : IsConnected I
+  isConnected_domain : IsConnected I
   /-- The function `f` must have the derivative `v t (f t)` at every point `t` in `I`. -/
-  deriv : IsIntegralCurveOn f v I
+  isIntegralCurveOn : IsIntegralCurveOn f v I
   /-- The maximality condition: If `(g, J)` is another solution such that `I ⊆ J` and `f` agrees
   with `g` on `I`, then `I` must be equal to `J`. -/
-  is_maximal : ∀ (g : ℝ → E) (J : Set ℝ), IsIntegralCurveOn g v J → IsOpen J → IsConnected J →
+  isMaximal : ∀ (g : ℝ → E) (J : Set ℝ), IsIntegralCurveOn g v J → IsOpen J → IsConnected J →
     I ⊆ J → (EqOn f g I) → I = J
 
 /--
@@ -307,39 +281,39 @@ lemma IsIntegralCurveOn.subset_maximal_domain_with_lipschitz
     (ht₀_loc : t₀ ∈ I_loc) (hf_loc_t₀ : f_loc t₀ = x₀)
     {f_max} {I_max} (h_max : IsMaximalODESolution v f_max I_max)
     (ht₀_max : t₀ ∈ I_max) (hf_max_t₀ : f_max t₀ = x₀)
-    (K_const : ℝ≥0) -- Uniform Lipschitz constant for v(t,·) on the intersection.
-    (h_v_lipschitz : ∀ (t_val : ℝ) (_ : t_val ∈ I_loc ∩ I_max),
-      LipschitzWith K_const (v t_val)) :
+    {K : ℝ≥0}
+    (h_v_lipschitz : ∀ t ∈ I_loc ∩ I_max, LipschitzWith K (v t)) :
     I_loc ⊆ I_max := by
   -- Step 1: Show that f_loc and f_max agree on the intersection of their domains.
   -- This follows from the provided uniqueness lemma, given they start at (t₀, x₀)
   -- and v is Lipschitz on the intersection.
   have h_agree_on_inter : EqOn f_loc f_max (I_loc ∩ I_max) :=
     IsIntegralCurveOn.eqOn_of_agree_at_t₀_of_lipschitz (v:=v) (t₀:=t₀)
-      h_loc h_max.deriv
-      h_loc_open h_max.isOpen
-      h_loc_conn h_max.isConnected
+      h_loc h_max.isIntegralCurveOn
+      h_loc_open h_max.isOpen_domain
+      h_loc_conn h_max.isConnected_domain
       ht₀_loc ht₀_max
       (by simp only [hf_loc_t₀, hf_max_t₀])
-      K_const h_v_lipschitz
+      h_v_lipschitz
   -- Step 2: Define a candidate solution f_union on the union of the domains I_union.
   let I_union := I_loc ∪ I_max
   -- f_union is defined to be f_max on I_max, and f_loc elsewhere (which means on I_loc \ I_max).
   -- This is well-defined due to h_agree_on_inter.
   let f_union (t : ℝ) : E := if t ∈ I_max then f_max t else f_loc t
   -- Step 3: Prove that f_union is an integral curve on I_union.
-  have h_union_open : IsOpen I_union := h_loc_open.union h_max.isOpen
+  have h_union_open : IsOpen I_union := h_loc_open.union h_max.isOpen_domain
   have h_union_conn : IsConnected I_union := by
     have h_inter_nonempty : (I_loc ∩ I_max).Nonempty := ⟨t₀, ⟨ht₀_loc, ht₀_max⟩⟩
-    exact IsConnected.union h_inter_nonempty h_loc_conn h_max.isConnected
+    exact IsConnected.union h_inter_nonempty h_loc_conn h_max.isConnected_domain
   have h_union_sol : IsIntegralCurveOn f_union v I_union := by
     intro t ht_in_union
     if ht_in_I_max : t ∈ I_max then
       -- Case A: t ∈ I_max.
       have h_fmax_deriv : HasDerivAt f_max (v t (f_max t)) t :=
-        (h_max.deriv t ht_in_I_max).hasDerivAt (h_max.isOpen.mem_nhds ht_in_I_max)
+        (h_max.isIntegralCurveOn t ht_in_I_max).hasDerivAt
+          (h_max.isOpen_domain.mem_nhds ht_in_I_max)
       have heq_eventually : f_union =ᶠ[𝓝 t] f_max := by
-        filter_upwards [h_max.isOpen.mem_nhds ht_in_I_max] with y hy_in_Imax
+        filter_upwards [h_max.isOpen_domain.mem_nhds ht_in_I_max] with y hy_in_Imax
         simp only [hy_in_Imax, ↓reduceIte, f_union]
       rw [show f_union t = f_max t by simp [f_union, ht_in_I_max]]
       exact (HasDerivAt.congr_of_eventuallyEq h_fmax_deriv heq_eventually).hasDerivWithinAt
@@ -380,7 +354,7 @@ lemma IsIntegralCurveOn.subset_maximal_domain_with_lipschitz
     intro t' ht_in_I_max'
     simp only [ht_in_I_max', ↓reduceIte, f_union]
   -- By the maximality of (f_max, I_max), I_max must equal I_union.
-  let h_maximal_implies_eq := h_max.is_maximal f_union I_union h_union_sol
+  let h_maximal_implies_eq := h_max.isMaximal f_union I_union h_union_sol
                                 h_union_open h_union_conn
                                 h_I_max_subset_I_union h_EqOn_f_max_f_union_on_I_max
   -- So, I_max = I_loc ∪ I_max.
@@ -392,7 +366,7 @@ lemma IsIntegralCurveOn.subset_maximal_domain_with_lipschitz
 
 /--
 If `(f₁, I₁)` and `(f₂, I₂)` are two maximal solutions to the same ODE `y' = v(t,y)`
-passing through `(t₀, x₀)`, and `v(t,·)` is Lipschitz continuous with a uniform constant `K_const`
+passing through `(t₀, x₀)`, and `v(t,·)` is Lipschitz continuous with a uniform constant `K`
 on the union of their domains `I₁ ∪ I₂`, then the maximal solutions are identical:
 their domains are equal (`I₁ = I₂`), and the functions agree on this common domain.
 -/
@@ -402,66 +376,41 @@ theorem IsMaximalODESolution.unique
   (h₂_max : IsMaximalODESolution v f₂ I₂)
   (ht₀₁ : t₀ ∈ I₁) (ht₀₂ : t₀ ∈ I₂)
   (hf₁_t₀ : f₁ t₀ = x₀) (hf₂_t₀ : f₂ t₀ = x₀)
-  (K_const : ℝ≥0)
-  (h_v_lipschitz_on_union :
-    ∀ (t_val : ℝ) (_ : t_val ∈ I₁ ∪ I₂), LipschitzWith K_const (v t_val)) :
+  {K : ℝ≥0}
+  (h_v_lipschitz_on_union : ∀ t ∈ I₁ ∪ I₂, LipschitzWith K (v t)) :
   I₁ = I₂ ∧ EqOn f₁ f₂ I₁ := by
-  -- The Lipschitz condition on `v` also holds on the intersection `I₁ ∩ I₂`,
-  -- as `I₁ ∩ I₂ ⊆ I₁ ∪ I₂`.
-  have h_v_lipschitz_on_inter :
-      ∀ (t_val : ℝ) (_ : t_val ∈ I₁ ∩ I₂), LipschitzWith K_const (v t_val) := by
-    intro t_val ht_in_inter
-    exact h_v_lipschitz_on_union t_val (mem_union_left I₂ ht_in_inter.1)
-  -- Show I₁ ⊆ I₂:
-  -- `h₁_max.deriv` is a solution on `I₁`.
-  -- `h₂_max` is a maximal solution on `I₂`.
-  -- By `subset_maximal_domain_with_lipschitz`, the domain of any solution is a subset
-  -- of the domain of a maximal solution, given Lipschitz continuity on the intersection.
+  have h_v_lipschitz_on_inter : ∀ t ∈ I₁ ∩ I₂, LipschitzWith K (v t) := by
+    intro t ht_in_inter
+    exact h_v_lipschitz_on_union t (mem_union_left I₂ ht_in_inter.1)
   have h_I₁_subset_I₂ : I₁ ⊆ I₂ :=
     IsIntegralCurveOn.subset_maximal_domain_with_lipschitz v t₀ x₀
-      h₁_max.deriv h₁_max.isOpen h₁_max.isConnected ht₀₁ hf₁_t₀
-      h₂_max ht₀₂ hf₂_t₀ K_const h_v_lipschitz_on_inter
-  -- Show I₂ ⊆ I₁ by a symmetric argument:
-  -- `h₂_max.deriv` is a solution on `I₂`.
-  -- `h₁_max` is a maximal solution on `I₁`.
-  -- The Lipschitz condition on `I₂ ∩ I₁` is the same as on `I₁ ∩ I₂`.
-  have h_v_lipschitz_on_inter_symm :
-      ∀ (t_val : ℝ) (_ : t_val ∈ I₂ ∩ I₁), LipschitzWith K_const (v t_val) := by
+      h₁_max.isIntegralCurveOn h₁_max.isOpen_domain h₁_max.isConnected_domain ht₀₁ hf₁_t₀
+      h₂_max ht₀₂ hf₂_t₀ h_v_lipschitz_on_inter
+  have h_v_lipschitz_on_inter_symm : ∀ t ∈ I₂ ∩ I₁, LipschitzWith K (v t) := by
     simpa only [inter_comm, mem_inter_iff, and_imp] using h_v_lipschitz_on_inter
   have h_I₂_subset_I₁ : I₂ ⊆ I₁ :=
     IsIntegralCurveOn.subset_maximal_domain_with_lipschitz v t₀ x₀
-      h₂_max.deriv h₂_max.isOpen h₂_max.isConnected ht₀₂ hf₂_t₀
-      h₁_max ht₀₁ hf₁_t₀ K_const h_v_lipschitz_on_inter_symm
-  -- From `I₁ ⊆ I₂` and `I₂ ⊆ I₁`, conclude that the domains are equal.
+      h₂_max.isIntegralCurveOn h₂_max.isOpen_domain h₂_max.isConnected_domain ht₀₂ hf₂_t₀
+      h₁_max ht₀₁ hf₁_t₀ h_v_lipschitz_on_inter_symm
   have h_I_eq : I₁ = I₂ := Set.Subset.antisymm h_I₁_subset_I₂ h_I₂_subset_I₁
-  -- Now show that the functions `f₁` and `f₂` agree on this common domain `I₁`.
-  -- The Lipschitz condition `h_v_lipschitz_on_union`
-  -- implies Lipschitz on `I₁` (since `I₁ ⊆ I₁ ∪ I₂`).
-  have h_v_lipschitz_on_I₁ : ∀ (t_val : ℝ) (_ : t_val ∈ I₁), LipschitzWith K_const (v t_val) := by
-    intro t_val ht_in_I₁
-    exact h_v_lipschitz_on_union t_val (mem_union_left I₂ ht_in_I₁)
-  -- Apply `eqOn_of_agree_at_t₀_of_lipschitz` to solutions `h₁_max.deriv` (on `I₁`)
-  -- and `(h_I_eq ▸ h₂_max.deriv)` (which is `h₂_max` viewed as a solution on `I₁`).
-  -- The intersection of their domains is `I₁ ∩ I₁ = I₁`.
-  -- The Lipschitz condition is needed on this intersection (`I₁`).
+  have h_v_lipschitz_on_I₁ : ∀ t ∈ I₁, LipschitzWith K (v t) := by
+    intro t ht_in_I₁
+    exact h_v_lipschitz_on_union t (mem_union_left I₂ ht_in_I₁)
   have h_eq_on_I₁ : EqOn f₁ f₂ (I₁ ∩ I₁) :=
     IsIntegralCurveOn.eqOn_of_agree_at_t₀_of_lipschitz (v:=v) (t₀:=t₀)
-      h₁_max.deriv
-      (by simpa only [h_I_eq] using h₂_max.deriv)
-      h₁_max.isOpen
-      (by simpa only [h_I_eq] using h₂_max.isOpen)
-      h₁_max.isConnected
-      (by simpa only [h_I_eq] using h₂_max.isConnected)
+      h₁_max.isIntegralCurveOn
+      (by simpa only [h_I_eq] using h₂_max.isIntegralCurveOn)
+      h₁_max.isOpen_domain
+      (by simpa only [h_I_eq] using h₂_max.isOpen_domain)
+      h₁_max.isConnected_domain
+      (by simpa only [h_I_eq] using h₂_max.isConnected_domain)
       ht₀₁
       (by simpa only [h_I_eq] using ht₀₂)
       (by simp only [hf₁_t₀, hf₂_t₀])
-      K_const
       (by
-        intro t_val ht_in_I₁_inter_I₁
-        exact h_v_lipschitz_on_I₁ t_val ht_in_I₁_inter_I₁.1)
-  rw [inter_self] at h_eq_on_I₁ -- Simplifies EqOn f₁ f₂ (I₁ ∩ I₁) to EqOn f₁ f₂ I₁
-
-  -- Combine the equality of domains and the agreement of functions.
+        intro t ht_in_I₁_inter_I₁
+        exact h_v_lipschitz_on_I₁ t ht_in_I₁_inter_I₁.1)
+  rw [inter_self] at h_eq_on_I₁
   exact ⟨h_I_eq, h_eq_on_I₁⟩
 
 /-! ### Proof of Existence of Maximal Solutions -/
@@ -502,10 +451,7 @@ private instance : LE (LocalODESolution v t₀ x₀) where
 -- Now define the Preorder instance. This is sufficient for `zorn_le_nonempty`.
 private instance : Preorder (LocalODESolution v t₀ x₀) where
   le := ODESolutionExtends v t₀ x₀
-  le_refl := fun p => by
-    constructor
-    · exact Set.Subset.refl _
-    · exact fun ⦃x⦄ ↦ congrFun rfl
+  le_refl p := ⟨Subset.rfl, fun _ _ ↦ rfl⟩
   le_trans := fun p₁ p₂ p₃ h₁₂ h₂₃ => by
     constructor
     · exact Set.Subset.trans h₁₂.1 h₂₃.1
@@ -524,16 +470,9 @@ This setoid structure is defined for completeness but not directly used by `zorn
 private instance LocalODESolutionSetoid : Setoid (LocalODESolution v t₀ x₀) where
   r p₁ p₂ := p₁ ≤ p₂ ∧ p₂ ≤ p₁
   iseqv := {
-    refl := fun p => by
-      constructor
-      · exact le_refl p
-      · exact le_refl p
-    symm := fun {p₁ p₂} h => by
-      exact And.symm h
-    trans := fun {p₁ p₂ p₃} h₁₂ h₂₃ => by
-      constructor
-      · exact le_trans h₁₂.1 h₂₃.1
-      · exact le_trans h₂₃.2 h₁₂.2
+    refl p := ⟨le_refl p, le_refl p⟩
+    symm := And.symm
+    trans h₁₂ h₂₃ := ⟨le_trans h₁₂.1 h₂₃.1, le_trans h₂₃.2 h₁₂.2⟩
   }
 
 /--
@@ -572,26 +511,25 @@ of `LocalODESolution` directly.
 private instance : PartialOrder (QuotientLocalODESolution v t₀ x₀) where
   le := (QuotientLocalODESolution.instLE v t₀ x₀).le
   le_refl := by
-    intro q; rcases q with ⟨p⟩; exact le_refl p
+    rintro ⟨p⟩
+    exact le_refl p
   le_trans := by
-    intro q₁ q₂ q₃; rcases q₁ with ⟨p₁⟩; rcases q₂ with ⟨p₂⟩; rcases q₃ with ⟨p₃⟩
-    intro h₁₂ h₂₃; exact @Preorder.le_trans (LocalODESolution v t₀ x₀) _ p₁ p₂ p₃ h₁₂ h₂₃
+    rintro ⟨p₁⟩ ⟨p₂⟩ ⟨p₃⟩ h₁₂ h₂₃
+    exact le_trans (α := LocalODESolution v t₀ x₀) h₁₂ h₂₃
   le_antisymm := by
-    intro q₁ q₂; rcases q₁ with ⟨p₁⟩; rcases q₂ with ⟨p₂⟩
-    intro h₁₂ h₂₁; exact Quotient.sound ⟨h₁₂, h₂₁⟩
+    rintro ⟨p₁⟩ ⟨p₂⟩ h₁₂ h₂₁
+    exact Quotient.sound ⟨h₁₂, h₂₁⟩
 
 
 /--
 If `C` is a chain of `LocalODESolution`s and `t` is in the domains of two solutions in `C`,
 then those solutions agree at `t`. This is because chains are totally ordered by extension.
 -/
-private lemma chain_solutions_agree (C : Set (LocalODESolution v t₀ x₀))
-  (hC : IsChain (· ≤ ·) C)
-    (p₁ p₂ : LocalODESolution v t₀ x₀) (hp₁ : p₁ ∈ C) (hp₂ : p₂ ∈ C)
-    (t : ℝ) (ht₁ : t ∈ p₁.I) (ht₂ : t ∈ p₂.I) : p₁.f t = p₂.f t := by
-  rcases hC.total hp₁ hp₂ with h12 | h21
-  · exact h12.2 ht₁
-  · exact (h21.2 ht₂).symm
+private lemma chain_solutions_agree {C : Set (LocalODESolution v t₀ x₀)}
+  (hC : IsChain (· ≤ ·) C) {p₁ p₂ : LocalODESolution v t₀ x₀}
+    (hp₁ : p₁ ∈ C) (hp₂ : p₂ ∈ C)
+    (t : ℝ) (ht₁ : t ∈ p₁.I) (ht₂ : t ∈ p₂.I) : p₁.f t = p₂.f t :=
+  (hC.total hp₁ hp₂).elim (·.2 ht₁) fun h ↦ (h.2 ht₂).symm
 
 open Classical in
 /--
@@ -649,11 +587,13 @@ private def chainSup (C : Set (LocalODESolution v t₀ x₀))
       have hy_in_I_sup : y ∈ I_sup := Set.mem_iUnion₂.mpr ⟨p, hp, hy_in_pI⟩
       simp only [f_sup, dif_pos hy_in_I_sup]
       have spec := Classical.choose_spec (Set.mem_iUnion₂.mp hy_in_I_sup)
-      exact chain_solutions_agree v t₀ x₀ C hC _ p spec.1 hp y spec.2 hy_in_pI
+      exact chain_solutions_agree (v := v) (t₀ := t₀) (x₀ := x₀) (C := C)
+        hC spec.1 hp y spec.2 hy_in_pI
     have f_sup_eq_pft : f_sup t = p.f t := by
       simp only [f_sup, dif_pos ht]
       have spec := Classical.choose_spec (Set.mem_iUnion₂.mp ht)
-      exact chain_solutions_agree v t₀ x₀ C hC _ p spec.1 hp t spec.2 htp
+      exact chain_solutions_agree (v := v) (t₀ := t₀) (x₀ := x₀) (C := C)
+        hC spec.1 hp t spec.2 htp
     rw [f_sup_eq_pft]
     exact (p_deriv.congr_of_eventuallyEq f_sup_eq_pf_eventually).hasDerivWithinAt
   exact { f := f_sup, I := I_sup, isOpen := I_sup_isOpen, isConnected := I_sup_isConnected,
@@ -679,7 +619,8 @@ private lemma chainSup_is_upper_bound (C : Set (LocalODESolution v t₀ x₀))
     simp [chainSup, ht_exists]
   rw [h_eval]
   have spec := Classical.choose_spec (Set.mem_iUnion₂.mp ht_in_I_sup')
-  exact chain_solutions_agree v t₀ x₀ C hC hp _ hpC spec.1 t ht spec.2
+  exact chain_solutions_agree (v := v) (t₀ := t₀) (x₀ := x₀) (C := C)
+    hC hpC spec.1 t ht spec.2
 
 /--
 Helper lemma stating that any non-empty chain `C` has an upper bound.
@@ -717,9 +658,8 @@ theorem exists_maximal_solution
     -- Picard-Lindelöf gives a solution `f₀` on `Icc tMin tMax`.
     have hx₀ : x₀ ∈ Metric.closedBall x₀ r := by
       simp only [Metric.mem_closedBall, dist_self, zero_le_coe]
-    rcases (IsPicardLindelof.exists_eq_forall_mem_Icc_hasDerivWithinAt
-      (f := v) (t₀ := t₀') (x₀ := x₀) (a := a) (r := r) (L := L) (K := K)
-      hpl_instance hx₀) with ⟨f₀, hf₀_t₀, hf₀_deriv_within⟩
+    rcases (IsPicardLindelof.exists_eq_forall_mem_Icc_hasDerivWithinAt hpl_instance hx₀)
+      with ⟨f₀, hf₀_t₀, hf₀_deriv_within⟩
     -- We use the open interval `Ioo tMin tMax` for our `LocalODESolution`.
     let I_local := Ioo tMin tMax
     have I_local_open : IsOpen I_local := isOpen_Ioo
@@ -799,12 +739,11 @@ theorem exists_maximal_ode_solution [CompleteSpace E]
     (tMin tMax : ℝ) (a r L K : ℝ≥0) (t₀' : Icc tMin tMax)
     (ht₀'_eq : (t₀' : ℝ) = t₀) (htMin_lt_t₀ : tMin < t₀) (ht₀_lt_tMax : t₀ < tMax)
     (hpl_instance : IsPicardLindelof v t₀' x₀ a r L K) :
-    ∃ (f : ℝ → E) (I : Set ℝ), IsMaximalODESolution v f I ∧ t₀ ∈ I ∧ f t₀ = x₀ :=
-  by
-    obtain ⟨f, I, hmax⟩ :=
-      MaximalSolutionExistence.exists_maximal_solution v t₀ x₀
-        tMin tMax a r L K t₀' ht₀'_eq htMin_lt_t₀ ht₀_lt_tMax hpl_instance
-    exact ⟨f, I, hmax⟩
+    ∃ (f : ℝ → E) (I : Set ℝ), IsMaximalODESolution v f I ∧ t₀ ∈ I ∧ f t₀ = x₀ := by
+  obtain ⟨f, I, hmax⟩ :=
+    MaximalSolutionExistence.exists_maximal_solution v t₀ x₀
+      tMin tMax a r L K t₀' ht₀'_eq htMin_lt_t₀ ht₀_lt_tMax hpl_instance
+  exact ⟨f, I, hmax⟩
 
 open Classical in
 /--
@@ -838,7 +777,7 @@ noncomputable def maximalODESolutionDomain [CompleteSpace E]
       ht₀'_eq htMin_lt_t₀ ht₀_lt_tMax hpl_instance))
 
 open Classical in
-lemma maximalODESolution_spec [CompleteSpace E]
+private lemma maximalODESolution_spec_of_exists [CompleteSpace E]
     (tMin tMax : ℝ) (a r L K : ℝ≥0) (t₀' : Icc tMin tMax)
     (ht₀'_eq : (t₀' : ℝ) = t₀) (htMin_lt_t₀ : tMin < t₀) (ht₀_lt_tMax : t₀ < tMax)
     (hpl_instance : IsPicardLindelof v t₀' x₀ a r L K) :
@@ -856,6 +795,23 @@ lemma maximalODESolution_spec [CompleteSpace E]
       (Classical.choose_spec
         (exists_maximal_ode_solution v t₀ x₀ tMin tMax a r L K t₀'
           ht₀'_eq htMin_lt_t₀ ht₀_lt_tMax hpl_instance)))
+
+open Classical in
+lemma maximalODESolution_spec [CompleteSpace E]
+    (tMin tMax : ℝ) (a r L K : ℝ≥0) (t₀' : Icc tMin tMax)
+    (ht₀'_eq : (t₀' : ℝ) = t₀) (htMin_lt_t₀ : tMin < t₀) (ht₀_lt_tMax : t₀ < tMax)
+    (hpl_instance : IsPicardLindelof v t₀' x₀ a r L K) :
+    IsMaximalODESolution v
+      (maximalODESolution v t₀ x₀ tMin tMax a r L K t₀' ht₀'_eq htMin_lt_t₀ ht₀_lt_tMax
+        hpl_instance)
+      (maximalODESolutionDomain v t₀ x₀ tMin tMax a r L K t₀' ht₀'_eq htMin_lt_t₀ ht₀_lt_tMax
+        hpl_instance)
+      ∧ t₀ ∈ maximalODESolutionDomain v t₀ x₀ tMin tMax a r L K t₀' ht₀'_eq htMin_lt_t₀
+        ht₀_lt_tMax hpl_instance
+      ∧ maximalODESolution v t₀ x₀ tMin tMax a r L K t₀' ht₀'_eq htMin_lt_t₀ ht₀_lt_tMax
+        hpl_instance t₀ = x₀ := by
+  simpa using maximalODESolution_spec_of_exists v t₀ x₀ tMin tMax a r L K t₀'
+    ht₀'_eq htMin_lt_t₀ ht₀_lt_tMax hpl_instance
 
 lemma maximalODESolution_isMaximal [CompleteSpace E]
     (tMin tMax : ℝ) (a r L K : ℝ≥0) (t₀' : Icc tMin tMax)
@@ -898,7 +854,7 @@ lemma maximalODESolution_isSolution [CompleteSpace E]
       (maximalODESolutionDomain v t₀ x₀ tMin tMax a r L K t₀' ht₀'_eq htMin_lt_t₀ ht₀_lt_tMax
         hpl_instance) :=
   (maximalODESolution_isMaximal v t₀ x₀ tMin tMax a r L K t₀' ht₀'_eq htMin_lt_t₀ ht₀_lt_tMax
-    hpl_instance).deriv
+    hpl_instance).isIntegralCurveOn
 
 theorem maximalODESolution_unique [CompleteSpace E]
     (tMin tMax : ℝ) (a r L K : ℝ≥0) (t₀' : Icc tMin tMax)
@@ -907,12 +863,12 @@ theorem maximalODESolution_unique [CompleteSpace E]
     {f₂ : ℝ → E} {I₂ : Set ℝ}
     (h₂_max : IsMaximalODESolution v f₂ I₂)
     (ht₀₂ : t₀ ∈ I₂) (hf₂_t₀ : f₂ t₀ = x₀)
-    (K_const : ℝ≥0)
+    {K' : ℝ≥0}
     (h_v_lipschitz_on_union :
-        ∀ (t_val : ℝ) (_ : t_val ∈
+        ∀ t ∈
           maximalODESolutionDomain v t₀ x₀ tMin tMax a r L K t₀' ht₀'_eq htMin_lt_t₀
-            ht₀_lt_tMax hpl_instance ∪ I₂),
-          LipschitzWith K_const (v t_val)) :
+            ht₀_lt_tMax hpl_instance ∪ I₂,
+          LipschitzWith K' (v t)) :
     maximalODESolutionDomain v t₀ x₀ tMin tMax a r L K t₀' ht₀'_eq htMin_lt_t₀ ht₀_lt_tMax
         hpl_instance = I₂
       ∧ EqOn
@@ -935,5 +891,4 @@ theorem maximalODESolution_unique [CompleteSpace E]
     ht₀₂
     (maximalODESolution_t₀_eq v t₀ x₀ tMin tMax a r L K t₀' ht₀'_eq htMin_lt_t₀ ht₀_lt_tMax
       hpl_instance)
-    hf₂_t₀
-    K_const h_v_lipschitz_on_union
+    hf₂_t₀ h_v_lipschitz_on_union
