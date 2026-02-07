@@ -2113,6 +2113,7 @@ public import Mathlib.Analysis.ODE.Basic
 public import Mathlib.Analysis.ODE.CompactExit
 public import Mathlib.Analysis.ODE.Gronwall
 public import Mathlib.Analysis.ODE.MaximalSolution
+public import Mathlib.Analysis.ODE.Osgood
 public import Mathlib.Analysis.ODE.PicardLindelof
 public import Mathlib.Analysis.ODE.Transform
 public import Mathlib.Analysis.Oscillation

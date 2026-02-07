@@ -81,6 +81,21 @@ theorem LinearMap.slope_comp {F : Type*} [AddCommGroup F] [Module k F] (f : E �
     (a b : k) : slope (f ∘ g) a b = f (slope g a b) :=
   f.toAffineMap.slope_comp g a b
 
+theorem slope_comp_eq {f g : k → k} {x y z : k} (hfx : f x = y) :
+    slope (g ∘ f) x z = slope g y (f z) * slope f x z := by
+  by_cases hxz : x = z
+  · subst hxz
+    simp [slope_def_field]
+  · by_cases hfz : f z = y
+    · simp [slope_def_field, hfx, hfz]
+    · rw [slope_def_field, slope_def_field, slope_def_field, hfx]
+      have hzx : z - x ≠ 0 := sub_ne_zero.mpr (Ne.symm hxz)
+      have hfzy : f z - y ≠ 0 := sub_ne_zero.mpr hfz
+      have hcomp : (g ∘ f) z - (g ∘ f) x = g (f z) - g y := by
+        simp [Function.comp, hfx]
+      rw [hcomp]
+      field_simp [hzx, hfzy]
+
 theorem slope_comm (f : k → PE) (a b : k) : slope f a b = slope f b a := by
   rw [slope, slope, ← neg_vsub_eq_vsub_rev, smul_neg, ← neg_smul, neg_inv, neg_sub]
 
