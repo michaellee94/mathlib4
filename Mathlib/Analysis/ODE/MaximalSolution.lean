@@ -148,24 +148,20 @@ lemma IsIntegralCurveOn.subset_maximal_domain_with_lipschitz
     (ht₀_max : t₀ ∈ I_max) (hf_max_t₀ : f_max t₀ = x₀)
     {K : ℝ≥0} (h_v_lipschitz : ∀ t ∈ I_loc ∩ I_max, LipschitzWith K (v t)) :
     I_loc ⊆ I_max := by
-  -- Step 1: Show that f_loc and f_max agree on the intersection of their domains.
-  -- This follows from the provided uniqueness lemma, given they start at (t₀, x₀)
-  -- and v is Lipschitz on the intersection.
+  -- First show the two solutions agree on `I_loc ∩ I_max` by uniqueness.
   have h_agree_on_inter : EqOn f_loc f_max (I_loc ∩ I_max) :=
     IsIntegralCurveOn.eqOn_of_agree_at_t₀_of_lipschitz v t₀ h_loc
       h_max.isIntegralCurveOn h_loc_open h_max.isOpen_domain h_loc_conn h_max.isConnected_domain
       ht₀_loc ht₀_max (by simp [hf_loc_t₀, hf_max_t₀]) h_v_lipschitz
-  -- Step 2: Define a candidate solution on the union of the domains.
-  -- f_union is defined to be f_max on I_max, and f_loc elsewhere (which means on I_loc \ I_max).
-  -- This is well-defined due to h_agree_on_inter.
+  -- Glue the two solutions along the overlap.
   let f_union (t : ℝ) : E := if t ∈ I_max then f_max t else f_loc t
-  -- Step 3: Prove that f_union is an integral curve on I_loc ∪ I_max.
+  -- Show the glued function is still a solution on `I_loc ∪ I_max`.
   have h_union_conn : IsConnected (I_loc ∪ I_max) := by
     exact IsConnected.union ⟨t₀, ⟨ht₀_loc, ht₀_max⟩⟩ h_loc_conn h_max.isConnected_domain
   have h_union_sol : IsIntegralCurveOn f_union v (I_loc ∪ I_max) := by
     intro t ht_in_union
     if ht_in_I_max : t ∈ I_max then
-      -- Case A: t ∈ I_max.
+      -- On `I_max`, `f_union` is locally equal to `f_max`.
       have h_fmax_deriv : HasDerivAt f_max (v t (f_max t)) t :=
         (h_max.isIntegralCurveOn t ht_in_I_max).hasDerivAt
           (h_max.isOpen_domain.mem_nhds ht_in_I_max)
@@ -175,11 +171,10 @@ lemma IsIntegralCurveOn.subset_maximal_domain_with_lipschitz
       rw [show f_union t = f_max t by simp [f_union, ht_in_I_max]]
       exact (HasDerivAt.congr_of_eventuallyEq h_fmax_deriv heq_eventually).hasDerivWithinAt
     else
-      -- Case B: t ∉ I_max. Since t ∈ I_loc ∪ I_max, it must be that t ∈ I_loc.
+      -- Off `I_max`, write `f_union = f_loc + φ` where `φ` has zero derivative at `t`.
       have ht_in_I_loc : t ∈ I_loc := ht_in_union.resolve_right ht_in_I_max
       have h_floc_deriv : HasDerivAt f_loc (v t (f_loc t)) t :=
         (h_loc t ht_in_I_loc).hasDerivAt (h_loc_open.mem_nhds ht_in_I_loc)
-      -- Define φ(y) = f_union(y) - f_loc(y).
       let φ y := if y ∈ I_max then f_max y - f_loc y else (0:E)
       have h_phi_t_is_zero : φ t = 0 := by simp [φ, ht_in_I_max]
       have h_phi_deriv_zero : HasDerivAt φ (0:E) t := by
@@ -201,11 +196,7 @@ lemma IsIntegralCurveOn.subset_maximal_domain_with_lipschitz
       have h_deriv : HasDerivAt f_union (v t (f_loc t)) t := by
         simpa [this] using deriv_sum
       simpa using h_deriv.hasDerivWithinAt
-  -- Step 4: Apply the maximality property of (f_max, I_max).
-  -- We have constructed a solution (f_union, I_loc ∪ I_max) where I_max ⊆ I_loc ∪ I_max
-  -- and f_max agrees with f_union on I_max.
-  -- By maximality, I_max = I_loc ∪ I_max.
-  -- Step 5: Conclude I_loc ⊆ I_max.
+  -- Maximality forces `I_max = I_loc ∪ I_max`, hence `I_loc ⊆ I_max`.
   rw [h_max.is_maximal (g := f_union) (J := I_loc ∪ I_max) h_union_sol
     (h_loc_open.union h_max.isOpen_domain) h_union_conn subset_union_right
     (fun t' ht' ↦ by simp [f_union, ht'])]
