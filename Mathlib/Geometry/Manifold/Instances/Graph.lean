@@ -54,9 +54,7 @@ def homeomorph {s : Set E} {f : E → E'} (hf : ContinuousOn f s) :
     simp only [Subtype.mk.injEq, Prod.mk.injEq, true_and]
     exact (mem_graphOn.mp hxy).2
   right_inv := fun _ => rfl
-  continuous_toFun := by
-    apply Continuous.subtype_mk
-    exact continuous_fst.comp continuous_subtype_val
+  continuous_toFun := by fun_prop
   continuous_invFun := by
     apply Continuous.subtype_mk
     exact Continuous.prodMk continuous_subtype_val
