@@ -178,15 +178,15 @@ namespace IsMaximalODESolutionWithin
 variable {U : Set (ℝ × E)} {v : {p : ℝ × E // p ∈ U} → E} {f : ℝ → E} {I : Set ℝ}
 
 lemma isOpen (h : IsMaximalODESolutionWithin U v f I) : IsOpen I :=
-  h.toIsMaximal.isOpen
+  h.toIsMaximal.isOpen_domain
 
 lemma isConnected (h : IsMaximalODESolutionWithin U v f I) : IsConnected I :=
-  h.toIsMaximal.isConnected
+  h.toIsMaximal.isConnected_domain
 
 lemma deriv
     (h : IsMaximalODESolutionWithin U v f I) :
     IsIntegralCurveOnWithin f U v I :=
-  ⟨h.mapsTo, h.toIsMaximal.deriv⟩
+  ⟨h.mapsTo, h.toIsMaximal.isIntegralCurveOn⟩
 
 /-- Specialization of `IsMaximalODESolutionWithin` to `U = univ`.
 
@@ -224,11 +224,11 @@ theorem IsMaximalODESolution.comp_neg_iff :
     IsMaximalODESolution v f I := by
   constructor
   · intro h
-    refine ⟨?_, ?_, IsIntegralCurveOn.comp_neg_iff.mp h.deriv, ?_⟩
-    · simpa [preimage_neg_neg_set] using h.isOpen.preimage continuous_neg
-    · exact ((Homeomorph.neg ℝ).isConnected_preimage (s:=I)).1 h.isConnected
+    refine ⟨?_, ?_, IsIntegralCurveOn.comp_neg_iff.mp h.isIntegralCurveOn, ?_⟩
+    · simpa [preimage_neg_neg_set] using h.isOpen_domain.preimage continuous_neg
+    · exact ((Homeomorph.neg ℝ).isConnected_preimage (s:=I)).1 h.isConnected_domain
     intro g J hg hJopen hJconn hIJ hEq
-    have h_rev := h.is_maximal (g ∘ Neg.neg) (Neg.neg ⁻¹' J)
+    have h_rev := h.isMaximal (g ∘ Neg.neg) (Neg.neg ⁻¹' J)
       (IsIntegralCurveOn.comp_neg_iff.mpr hg)
       (hJopen.preimage continuous_neg)
       (((Homeomorph.neg ℝ).isConnected_preimage (s:=J)).2 hJconn)
@@ -240,9 +240,9 @@ theorem IsMaximalODESolution.comp_neg_iff :
     have h_rev' := congrArg (fun s => Neg.neg ⁻¹' s) h_rev
     simpa [preimage_neg_neg_set] using h_rev'
   · intro h
-    refine ⟨?_, ?_, IsIntegralCurveOn.comp_neg_iff.mpr h.deriv, ?_⟩
-    · simpa [preimage_neg_neg_set] using h.isOpen.preimage continuous_neg
-    · exact ((Homeomorph.neg ℝ).isConnected_preimage (s:=I)).2 h.isConnected
+    refine ⟨?_, ?_, IsIntegralCurveOn.comp_neg_iff.mpr h.isIntegralCurveOn, ?_⟩
+    · simpa [preimage_neg_neg_set] using h.isOpen_domain.preimage continuous_neg
+    · exact ((Homeomorph.neg ℝ).isConnected_preimage (s:=I)).2 h.isConnected_domain
     intro g J hg hJopen hJconn hIJ hEq
     have hg' : IsIntegralCurveOn (g ∘ Neg.neg) v (Neg.neg ⁻¹' J) := by
       have hg' :=
@@ -257,7 +257,7 @@ theorem IsMaximalODESolution.comp_neg_iff :
       intro t ht
       have : -t ∈ J := hIJ (by simpa using ht)
       simpa using this
-    have h_rev := h.is_maximal (g ∘ Neg.neg) (Neg.neg ⁻¹' J)
+    have h_rev := h.isMaximal (g ∘ Neg.neg) (Neg.neg ⁻¹' J)
       hg'
       (hJopen.preimage continuous_neg)
       (((Homeomorph.neg ℝ).isConnected_preimage (s:=J)).2 hJconn)
