@@ -187,24 +187,25 @@ theorem contMDiff_homeomorph {s : Set H} (f : H → E') (hf : ContinuousOn f s)
     (isLocalStructomorphOn_contDiffGroupoid_iff (I := I) (n := n) h).1 hStruct
 
 /--
-The inclusion map from the graph into the ambient product space is `C^n` if and only if
-the function `f` is `C^n` on its domain.
+If `s` is a `C^n` manifold and `m ≤ n`, then the inclusion map from the graph into the ambient
+product space is `C^m` if and only if the graph function is `C^m` on `s`.
 
 This characterizes when the graph, with the manifold structure inherited from the domain,
-is a smooth submanifold of the product space `H × E'`, assuming the inclusion
-`Subtype.val : s → H` is `C^n`.
+is a `C^m` submanifold of the product space `H × E'`, assuming
+`Subtype.val : s → H` is `C^m`.
 -/
 theorem contMDiff_subtype_val_iff {s : Set H} (f : H → E') (hf : ContinuousOn f s)
-    [ChartedSpace H s] [IsManifold I n s]
-    (hval : ContMDiff I I n (Subtype.val : s → H)) :
+    {m n : WithTop ℕ∞} [ChartedSpace H s] [IsManifold I n s] (hmn : m ≤ n)
+    (hval : ContMDiff I I m (Subtype.val : s → H)) :
     let _ := instChartedSpace f hf
-    ContMDiff I (I.prod (modelWithCornersSelf K E')) n
+    ContMDiff I (I.prod (modelWithCornersSelf K E')) m
       (Subtype.val : s.graphOn f → H × E') ↔
-    ContMDiff I (modelWithCornersSelf K E') n (fun x : s ↦ f x) := by
+    ContMDiff I (modelWithCornersSelf K E') m (fun x : s ↦ f x) := by
+  letI : IsManifold I m s := IsManifold.of_le hmn
   letI csGraph := instChartedSpace f hf
-  letI : IsManifold I n (s.graphOn f) := instIsManifold (I := I) (n := n) (s := s) f hf
-  have hHomeo : ContMDiff I I n (homeomorph f hf) ∧ ContMDiff I I n (homeomorph f hf).symm :=
-      contMDiff_homeomorph I f hf
+  letI : IsManifold I m (s.graphOn f) := instIsManifold (I := I) (n := m) (s := s) f hf
+  have hHomeo : ContMDiff I I m (homeomorph f hf) ∧ ContMDiff I I m (homeomorph f hf).symm :=
+      contMDiff_homeomorph (I := I) (n := m) f hf
   -- The inclusion factors: Subtype.val = (fun x ↦ (x, f x)) ∘ homeomorph
   have factorization : (Subtype.val : s.graphOn f → H × E') =
       (fun x : s => (x.val, f x.val)) ∘ (homeomorph f hf) := by
