@@ -177,13 +177,13 @@ namespace IsMaximalODESolutionWithin
 
 variable {U : Set (ℝ × E)} {v : {p : ℝ × E // p ∈ U} → E} {f : ℝ → E} {I : Set ℝ}
 
-lemma isOpen (h : IsMaximalODESolutionWithin U v f I) : IsOpen I :=
+lemma isOpen_domain (h : IsMaximalODESolutionWithin U v f I) : IsOpen I :=
   h.toIsMaximal.isOpen_domain
 
-lemma isConnected (h : IsMaximalODESolutionWithin U v f I) : IsConnected I :=
+lemma isConnected_domain (h : IsMaximalODESolutionWithin U v f I) : IsConnected I :=
   h.toIsMaximal.isConnected_domain
 
-lemma deriv
+lemma isIntegralCurveOn
     (h : IsMaximalODESolutionWithin U v f I) :
     IsIntegralCurveOnWithin f U v I :=
   ⟨h.mapsTo, h.toIsMaximal.isIntegralCurveOn⟩
