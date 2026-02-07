@@ -6,6 +6,8 @@ Authors: Michael Lee
 module
 
 public import Mathlib.Geometry.Manifold.IsManifold.Basic
+public import Mathlib.Geometry.Manifold.ContMDiff.Constructions
+public import Mathlib.Geometry.Manifold.ContMDiff.Atlas
 
 /-!
 # Graphs of Continuous Functions as Manifolds
@@ -21,6 +23,8 @@ and that it inherits a manifold structure when the domain is a manifold.
   `univ.graphOn f ≃ₜ E`.
 * `Set.graphOn.instChartedSpace`: The graph inherits a `ChartedSpace` structure from the domain.
 * `Set.graphOn.instIsManifold`: The graph is a smooth manifold when the domain is.
+* `Set.graphOn.contMDiff_subtype_val_iff`: Smoothness of graph inclusion is equivalent to
+  smoothness of the graph function on the domain manifold.
 
 ## Implementation Notes
 
@@ -153,6 +157,73 @@ theorem instIsManifold {s : Set H} (f : H → E') (hf : ContinuousOn f s)
                  Homeomorph.toOpenPartialHomeomorph_apply, Homeomorph.apply_symm_apply]
   haveI : @HasGroupoid H _ (s.graphOn f) _ csGraph (contDiffGroupoid n I) := ⟨compat⟩
   exact @IsManifold.mk' K _ E _ _ H _ I n (s.graphOn f) _ csGraph this
+
+omit [NormedSpace K E'] in
+/-- Smoothness of the graph-domain homeomorphism and its inverse for the induced manifold
+structure on the graph. -/
+theorem contMDiff_homeomorph {s : Set H} (f : H → E') (hf : ContinuousOn f s)
+    [ChartedSpace H s] [IsManifold I n s] :
+    let _ := instChartedSpace f hf
+    let _ : IsManifold I n (s.graphOn f) := instIsManifold (I := I) (n := n) (s := s) f hf
+    ContMDiff I I n (homeomorph f hf) ∧ ContMDiff I I n (homeomorph f hf).symm := by
+  letI csGraph := instChartedSpace f hf
+  letI : IsManifold I n (s.graphOn f) := instIsManifold (I := I) (n := n) (s := s) f hf
+  let h := (homeomorph f hf).toOpenPartialHomeomorph
+  have hStruct :
+      ChartedSpace.LiftPropOn (contDiffGroupoid n I).IsLocalStructomorphWithinAt h h.source := by
+    intro x hx
+    refine ⟨h.continuousAt hx |>.continuousWithinAt, ?_⟩
+    intro hx'
+    let c : OpenPartialHomeomorph s H := chartAt H (h x)
+    let e : OpenPartialHomeomorph H H := (chartAt H x).symm.trans (h.trans c)
+    refine ⟨e, ?_, ?_, ?_⟩
+    · exact (contDiffGroupoid n I).compatible (chart_mem_atlas (H := H) x) (by
+        dsimp [h, c]
+        exact ⟨chartAt H (homeomorph f hf x), chart_mem_atlas (H := H) (homeomorph f hf x), rfl⟩)
+    · intro y hy
+      simp [e, c, h] at hy ⊢
+    · simp [e, c, h]
+  simpa [h, contMDiffOn_univ] using
+    (isLocalStructomorphOn_contDiffGroupoid_iff (I := I) (n := n) h).1 hStruct
+
+/--
+The inclusion map from the graph into the ambient product space is `C^n` if and only if
+the function `f` is `C^n` on its domain.
+
+This characterizes when the graph, with the manifold structure inherited from the domain,
+is a smooth submanifold of the product space `H × E'`, assuming the inclusion
+`Subtype.val : s → H` is `C^n`.
+-/
+theorem contMDiff_subtype_val_iff {s : Set H} (f : H → E') (hf : ContinuousOn f s)
+    [ChartedSpace H s] [IsManifold I n s]
+    (hval : ContMDiff I I n (Subtype.val : s → H)) :
+    let _ := instChartedSpace f hf
+    ContMDiff I (I.prod (modelWithCornersSelf K E')) n
+      (Subtype.val : s.graphOn f → H × E') ↔
+    ContMDiff I (modelWithCornersSelf K E') n (fun x : s ↦ f x) := by
+  letI csGraph := instChartedSpace f hf
+  letI : IsManifold I n (s.graphOn f) := instIsManifold (I := I) (n := n) (s := s) f hf
+  have hHomeo : ContMDiff I I n (homeomorph f hf) ∧ ContMDiff I I n (homeomorph f hf).symm :=
+      contMDiff_homeomorph I f hf
+  -- The inclusion factors: Subtype.val = (fun x ↦ (x, f x)) ∘ homeomorph
+  have factorization : (Subtype.val : s.graphOn f → H × E') =
+      (fun x : s => (x.val, f x.val)) ∘ (homeomorph f hf) := by
+    ext z <;> rcases z with ⟨⟨x, y⟩, hxy⟩
+    · rfl
+    · simpa [Function.comp_apply, homeomorph] using (mem_graphOn.mp hxy).2.symm
+  rw [factorization]
+  constructor
+  · intro h
+    have hcomp := h.comp hHomeo.2
+    simp only [Function.comp_assoc, Homeomorph.self_comp_symm, Function.comp_id] at hcomp
+    rw [contMDiff_prod_iff] at hcomp
+    simpa [Function.comp_apply] using hcomp.2
+  · intro hf_smooth
+    apply ContMDiff.comp _ hHomeo.1
+    rw [contMDiff_prod_iff]
+    constructor
+    · simpa [Function.comp_apply] using hval
+    · simpa [Function.comp_apply] using hf_smooth
 
 end Manifold
 
