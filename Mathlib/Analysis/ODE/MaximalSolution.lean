@@ -69,9 +69,8 @@ lemma IsIntegralCurveOn.eqOn_of_agree_at_t₀_of_lipschitz
     {K : ℝ≥0} (h_lipschitz : ∀ t ∈ I₁ ∩ I₂, LipschitzWith K (v t)) :
     EqOn f₁ f₂ (I₁ ∩ I₂) := by
   let K_int := I₁ ∩ I₂
-  have hK_int_ord : OrdConnected K_int := by
-    simpa [K_int] using
-      OrdConnected.inter (h₁_conn.isPreconnected.ordConnected) (h₂_conn.isPreconnected.ordConnected)
+  have hK_int_ord : OrdConnected K_int := by simpa [K_int] using
+    (h₁_conn.isPreconnected.ordConnected).inter (h₂_conn.isPreconnected.ordConnected)
   intro t' ht'_in_K_int
   rcases le_total t₀ t' with h_t₀_le_t' | h_t'_le_t₀
   · -- Forward-time case: apply uniqueness on `[t₀, t']`.
