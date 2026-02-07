@@ -83,8 +83,7 @@ section Manifold
 variable {𝕜 : Type*} [NontriviallyNormedField 𝕜]
   {E : Type*} [NormedAddCommGroup E] [NormedSpace 𝕜 E]
   {E' : Type*} [NormedAddCommGroup E'] [NormedSpace 𝕜 E']
-  {H : Type*} [TopologicalSpace H] (I : ModelWithCorners 𝕜 E H)
-  {n : WithTop ℕ∞}
+  {H : Type*} [TopologicalSpace H] (I : ModelWithCorners 𝕜 E H) {n : WithTop ℕ∞}
 
 /--
 The graph of a continuous function inherits a `ChartedSpace` structure from the domain.
@@ -95,10 +94,8 @@ by composing charts of `s` with the homeomorphism from graph to `s`.
 def instChartedSpace {s : Set H} {f : H → E'} (hf : ContinuousOn f s)
     [cs : ChartedSpace H s] : ChartedSpace H (s.graphOn f) where
   atlas := { (homeomorph hf).toOpenPartialHomeomorph.trans e | e ∈ cs.atlas }
-  chartAt x := (homeomorph hf).toOpenPartialHomeomorph.trans
-    (cs.chartAt (homeomorph hf x))
-  mem_chart_source x := by
-    simp
+  chartAt x := (homeomorph hf).toOpenPartialHomeomorph.trans (cs.chartAt (homeomorph hf x))
+  mem_chart_source x := by simp
   chart_mem_atlas x := by
     simp only [mem_setOf_eq]
     exact ⟨cs.chartAt (homeomorph hf x), cs.chart_mem_atlas _, rfl⟩
@@ -133,19 +130,13 @@ theorem instIsManifold {s : Set H} {f : H → E'} (hf : ContinuousOn f s)
       · intro ⟨hx1, hx2⟩
         simp only [OpenPartialHomeomorph.trans_apply,
                    Homeomorph.toOpenPartialHomeomorph_symm_apply] at hx2
-        constructor
-        · exact hx1.1
-        · convert hx2 using 1
+        exact ⟨hx1.1, hx2⟩
       · intro ⟨hx1, hx2⟩
         refine ⟨⟨hx1, trivial⟩, ?_⟩
-        simpa only [OpenPartialHomeomorph.trans_apply,
-          Homeomorph.toOpenPartialHomeomorph_symm_apply] using hx2
+        simpa using hx2
     · -- function equality on source
       intro x hx
-      simp only [OpenPartialHomeomorph.trans_symm_eq_symm_trans_symm,
-                 OpenPartialHomeomorph.trans_apply,
-                 Homeomorph.toOpenPartialHomeomorph_symm_apply,
-                 Homeomorph.toOpenPartialHomeomorph_apply, Homeomorph.apply_symm_apply]
+      simp
   haveI : HasGroupoid (H := H) (M := s.graphOn f) (contDiffGroupoid n I) := ⟨compat⟩
   exact IsManifold.mk' I n (s.graphOn f)
 
