@@ -32,6 +32,9 @@ The key insight is that the projection `(x, f(x)) ↦ x` is a homeomorphism from
 domain. Chart transitions on the graph factor through this homeomorphism, and since the
 homeomorphism cancels in the composition, chart compatibility follows from compatibility in
 the domain.
+
+TODO: Once submanifolds are properly implemented, use `contMDiff_subtype_val_iff` to show that the
+graph is a smooth submanifold of the product space when the graph function is smooth.
 -/
 
 @[expose] public section
