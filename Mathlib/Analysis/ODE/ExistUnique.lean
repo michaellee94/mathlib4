@@ -57,6 +57,62 @@ theorem exists_eq_isIntegralCurveOn₀
     ∃ α : ℝ → E, α t₀ = x₀ ∧ IsIntegralCurveOn α f (Icc tmin tmax) :=
   exists_eq_isIntegralCurveOn hf (mem_closedBall_self le_rfl)
 
+open Classical in
+/-- **Picard-Lindelöf (Cauchy-Lipschitz) theorem**, differential form. This version shows the
+existence of a local flow and that it is Lipschitz continuous in the initial point. -/
+theorem exists_forall_mem_closedBall_eq_isIntegralCurveOn_lipschitzOnWith
+    (hf : IsPicardLindelof f t₀ x₀ a r L K) :
+    ∃ α : E → ℝ → E, (∀ x ∈ closedBall x₀ r, α x t₀ = x ∧
+      IsIntegralCurveOn (α x) f (Icc tmin tmax)) ∧
+      ∃ L' : ℝ≥0, ∀ t ∈ Icc tmin tmax, LipschitzOnWith L' (α · t) (closedBall x₀ r) := by
+  have (x) (hx : x ∈ closedBall x₀ r) := FunSpace.exists_isFixedPt_next hf hx
+  choose α hα using this
+  set α' := fun (x : E) ↦ if hx : x ∈ closedBall x₀ r then
+    α x hx |>.compProj else 0 with hα'
+  refine ⟨α', fun x hx ↦ ⟨?_, fun t ht ↦ ?_⟩, ?_⟩
+  · rw [hα']
+    beta_reduce
+    rw [dif_pos hx, FunSpace.compProj_val, ← hα, FunSpace.next_apply₀]
+  · rw [hα']
+    beta_reduce
+    rw [dif_pos hx, FunSpace.compProj_apply]
+    apply hasDerivWithinAt_picard_Icc t₀.2 hf.continuousOn_uncurry
+      (α x hx |>.continuous_compProj.continuousOn)
+      (fun _ ht' ↦ α x hx |>.compProj_mem_closedBall hf.mul_max_le)
+      x ht |>.congr_of_mem _ ht
+    intro t' ht'
+    nth_rw 1 [← hα]
+    rw [FunSpace.compProj_of_mem ht', FunSpace.next_apply]
+  · obtain ⟨L', h⟩ := FunSpace.exists_forall_closedBall_funSpace_dist_le_mul hf
+    refine ⟨L', fun t ht ↦ LipschitzOnWith.of_dist_le_mul fun x hx y hy ↦ ?_⟩
+    simp_rw [hα']
+    rw [dif_pos hx, dif_pos hy, FunSpace.compProj_apply, FunSpace.compProj_apply,
+      ← FunSpace.toContinuousMap_apply_eq_apply, ← FunSpace.toContinuousMap_apply_eq_apply]
+    have : Nonempty (Icc tmin tmax) := ⟨t₀⟩
+    apply ContinuousMap.dist_le_iff_of_nonempty.mp
+    exact h x y hx hy (α x hx) (α y hy) (hα x hx) (hα y hy)
+
+/-- **Picard-Lindelöf (Cauchy-Lipschitz) theorem**, differential form. This version shows the
+existence of a local flow and that it is continuous on its domain as a (partial) map `E × ℝ → E`. -/
+theorem exists_forall_mem_closedBall_eq_isIntegralCurveOn_continuousOn
+    (hf : IsPicardLindelof f t₀ x₀ a r L K) :
+    ∃ α : E × ℝ → E, (∀ x ∈ closedBall x₀ r, α ⟨x, t₀⟩ = x ∧
+      IsIntegralCurveOn (α ⟨x, ·⟩) f (Icc tmin tmax)) ∧
+      ContinuousOn α (closedBall x₀ r ×ˢ Icc tmin tmax) := by
+  obtain ⟨α, hα1, L', hα2⟩ := hf.exists_forall_mem_closedBall_eq_isIntegralCurveOn_lipschitzOnWith
+  refine ⟨uncurry α, hα1, ?_⟩
+  apply continuousOn_prod_of_continuousOn_lipschitzOnWith _ L' _ hα2
+  exact fun x hx ↦ (hα1 x hx).2.continuousOn
+
+/-- **Picard-Lindelöf (Cauchy-Lipschitz) theorem**, differential form. This version shows the
+existence of a local flow. -/
+theorem exists_forall_mem_closedBall_eq_isIntegralCurveOn
+    (hf : IsPicardLindelof f t₀ x₀ a r L K) :
+    ∃ α : E → ℝ → E, ∀ x ∈ closedBall x₀ r, α x t₀ = x ∧
+      IsIntegralCurveOn (α x) f (Icc tmin tmax) :=
+  have ⟨α, hα⟩ := exists_forall_mem_closedBall_eq_isIntegralCurveOn_lipschitzOnWith hf
+  ⟨α, hα.1⟩
+
 end IsPicardLindelof
 
 /-! ## $C^1$ vector field -/
