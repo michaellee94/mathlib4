@@ -184,7 +184,7 @@ a given initial value provided that the RHS is Lipschitz continuous in `x` withi
 and we consider only solutions included in `s`.
 
 This version shows uniqueness in a closed interval `Icc a b`, where `a` is the initial time. -/
-theorem ODE_solution_unique_of_mem_Icc_right
+theorem IsIntegralCurveOn.eqOn_Icc_right
     (hv : ∀ t ∈ Ico a b, LipschitzOnWith K (v t) (s t))
     (hf : ContinuousOn f (Icc a b)) (hf' : IsIntegralCurveOn f v (Ico a b))
     (hfs : ∀ t ∈ Ico a b, f t ∈ s t)
@@ -197,9 +197,9 @@ theorem ODE_solution_unique_of_mem_Icc_right
     (dist_le_zero.2 ha) t ht
   rwa [zero_mul, dist_le_zero] at this
 
-/-- A time-reversed version of `ODE_solution_unique_of_mem_Icc_right`. Uniqueness is shown in a
+/-- A time-reversed version of `IsIntegralCurveOn.eqOn_Icc_right`. Uniqueness is shown in a
 closed interval `Icc a b`, where `b` is the "initial" time. -/
-theorem ODE_solution_unique_of_mem_Icc_left
+theorem IsIntegralCurveOn.eqOn_Icc_left
     (hv : ∀ t ∈ Ioc a b, LipschitzOnWith K (v t) (s t))
     (hf : ContinuousOn f (Icc a b)) (hf' : IsIntegralCurveOn f v (Ioc a b))
     (hfs : ∀ t ∈ Ioc a b, f t ∈ s t)
@@ -221,7 +221,7 @@ theorem ODE_solution_unique_of_mem_Icc_left
     rw [eqOn_comp_right_iff] at this
     convert this
     simp
-  apply ODE_solution_unique_of_mem_Icc_right hv'
+  apply IsIntegralCurveOn.eqOn_Icc_right hv'
     (hf.comp continuousOn_neg hmt1) _ (fun _ ht ↦ hfs _ (hmt2 ht))
     (hg.comp continuousOn_neg hmt1) _ (fun _ ht ↦ hgs _ (hmt2 ht)) (by simp [hb])
   · intro t ht
@@ -233,9 +233,9 @@ theorem ODE_solution_unique_of_mem_Icc_left
       (hasDerivAt_neg t).hasDerivWithinAt hmt2
     simp
 
-/-- A version of `ODE_solution_unique_of_mem_Icc_right` for uniqueness in a closed interval whose
+/-- A version of `IsIntegralCurveOn.eqOn_Icc_right` for uniqueness in a closed interval whose
 interior contains the initial time. -/
-theorem ODE_solution_unique_of_mem_Icc
+theorem IsIntegralCurveOn.eqOn_Icc
     (hv : ∀ t ∈ Ioo a b, LipschitzOnWith K (v t) (s t)) (ht : t₀ ∈ Ioo a b)
     (hf : ContinuousOn f (Icc a b)) (hf' : IsIntegralCurveOn f v (Ioo a b))
     (hfs : ∀ t ∈ Ioo a b, f t ∈ s t)
@@ -245,20 +245,20 @@ theorem ODE_solution_unique_of_mem_Icc
   rw [← Icc_union_Icc_eq_Icc (le_of_lt ht.1) (le_of_lt ht.2)]
   apply EqOn.union
   · have hss : Ioc a t₀ ⊆ Ioo a b := Ioc_subset_Ioo_right ht.2
-    exact ODE_solution_unique_of_mem_Icc_left (fun t ht ↦ hv t (hss ht))
+    exact IsIntegralCurveOn.eqOn_Icc_left (fun t ht ↦ hv t (hss ht))
       (hf.mono <| Icc_subset_Icc_right <| le_of_lt ht.2)
       (hf'.mono hss) (fun _ ht' ↦ hfs _ (hss ht'))
       (hg.mono <| Icc_subset_Icc_right <| le_of_lt ht.2)
       (hg'.mono hss) (fun _ ht' ↦ hgs _ (hss ht')) heq
   · have hss : Ico t₀ b ⊆ Ioo a b := Ico_subset_Ioo_left ht.1
-    exact ODE_solution_unique_of_mem_Icc_right (fun t ht ↦ hv t (hss ht))
+    exact IsIntegralCurveOn.eqOn_Icc_right (fun t ht ↦ hv t (hss ht))
       (hf.mono <| Icc_subset_Icc_left <| le_of_lt ht.1)
       (hf'.mono hss) (fun _ ht' ↦ hfs _ (hss ht'))
       (hg.mono <| Icc_subset_Icc_left <| le_of_lt ht.1)
       (hg'.mono hss) (fun _ ht' ↦ hgs _ (hss ht')) heq
 
-/-- A version of `ODE_solution_unique_of_mem_Icc` for uniqueness in an open interval. -/
-theorem ODE_solution_unique_of_mem_Ioo
+/-- A version of `IsIntegralCurveOn.eqOn_Icc` for uniqueness in an open interval. -/
+theorem IsIntegralCurveOn.eqOn_Ioo
     (hv : ∀ t ∈ Ioo a b, LipschitzOnWith K (v t) (s t)) (ht : t₀ ∈ Ioo a b)
     (hf : IsIntegralCurveOn f v (Ioo a b)) (hfs : ∀ t ∈ Ioo a b, f t ∈ s t)
     (hg : IsIntegralCurveOn g v (Ioo a b)) (hgs : ∀ t ∈ Ioo a b, g t ∈ s t)
@@ -268,7 +268,7 @@ theorem ODE_solution_unique_of_mem_Ioo
   rcases lt_or_ge t' t₀ with (h | h)
   · have hss : Icc t' t₀ ⊆ Ioo a b :=
       fun _ ht'' ↦ ⟨lt_of_lt_of_le ht'.1 ht''.1, lt_of_le_of_lt ht''.2 ht.2⟩
-    exact ODE_solution_unique_of_mem_Icc_left
+    exact IsIntegralCurveOn.eqOn_Icc_left
       (fun t'' ht'' ↦ hv t'' ((Ioc_subset_Icc_self.trans hss) ht''))
       (hf.continuousOn.mono hss)
       (hf.mono (Ioc_subset_Icc_self.trans hss))
@@ -279,7 +279,7 @@ theorem ODE_solution_unique_of_mem_Ioo
       ⟨le_rfl, le_of_lt h⟩
   · have hss : Icc t₀ t' ⊆ Ioo a b :=
       fun _ ht'' ↦ ⟨lt_of_lt_of_le ht.1 ht''.1, lt_of_le_of_lt ht''.2 ht'.2⟩
-    exact ODE_solution_unique_of_mem_Icc_right
+    exact IsIntegralCurveOn.eqOn_Icc_right
       (fun t'' ht'' ↦ hv t'' ((Ico_subset_Icc_self.trans hss) ht''))
       (hf.continuousOn.mono hss)
       (hf.mono (Ico_subset_Icc_self.trans hss))
@@ -290,7 +290,7 @@ theorem ODE_solution_unique_of_mem_Ioo
       ⟨h, le_rfl⟩
 
 /-- Local uniqueness of ODE solutions. -/
-theorem ODE_solution_unique_of_eventually
+theorem IsIntegralCurveAt.eventuallyEq
     (hv : ∀ᶠ t in 𝓝 t₀, LipschitzOnWith K (v t) (s t))
     (hf : IsIntegralCurveAt f v t₀) (hfs : ∀ᶠ t in 𝓝 t₀, f t ∈ s t)
     (hg : IsIntegralCurveAt g v t₀) (hgs : ∀ᶠ t in 𝓝 t₀, g t ∈ s t)
@@ -299,25 +299,25 @@ theorem ODE_solution_unique_of_eventually
   rw [Filter.eventuallyEq_iff_exists_mem]
   refine ⟨ball t₀ ε, ball_mem_nhds _ hε, ?_⟩
   simp_rw [Real.ball_eq_Ioo] at *
-  exact ODE_solution_unique_of_mem_Ioo (fun _ ht ↦ (h _ ht).1)
+  exact IsIntegralCurveOn.eqOn_Ioo (fun _ ht ↦ (h _ ht).1)
     (Real.ball_eq_Ioo t₀ ε ▸ mem_ball_self hε)
     (fun _ ht ↦ (h _ ht).2.1.1.hasDerivWithinAt) (fun _ ht ↦ (h _ ht).2.1.2)
     (fun _ ht ↦ (h _ ht).2.2.1.hasDerivWithinAt) (fun _ ht ↦ (h _ ht).2.2.2) heq
 
 /-- There exists only one solution of an ODE $\dot x=v(t, x)$ with
 a given initial value provided that the RHS is Lipschitz continuous in `x`. -/
-theorem ODE_solution_unique
+theorem IsIntegralCurveOn.eqOn
     (hv : ∀ t, LipschitzWith K (v t))
     (hf : ContinuousOn f (Icc a b)) (hf' : IsIntegralCurveOn f v (Ico a b))
     (hg : ContinuousOn g (Icc a b)) (hg' : IsIntegralCurveOn g v (Ico a b))
     (ha : f a = g a) :
     EqOn f g (Icc a b) :=
-  ODE_solution_unique_of_mem_Icc_right (fun t _ ↦ (hv t).lipschitzOnWith) hf hf'
+  IsIntegralCurveOn.eqOn_Icc_right (fun t _ ↦ (hv t).lipschitzOnWith) hf hf'
     (fun _ _ ↦ mem_univ _) hg hg' (fun _ _ ↦ mem_univ _) ha
 
 /-- There exists only one global solution to an ODE $\dot x=v(t, x)$ with a given initial value
 provided that the RHS is Lipschitz continuous. -/
-theorem ODE_solution_unique_univ
+theorem IsIntegralCurve.eq
     (hv : ∀ t, LipschitzOnWith K (v t) (s t))
     (hf : IsIntegralCurve f v) (hfs : ∀ t, f t ∈ s t)
     (hg : IsIntegralCurve g v) (hgs : ∀ t, g t ∈ s t)
@@ -331,6 +331,6 @@ theorem ODE_solution_unique_univ
     · exact le_abs_self _ |>.trans_lt <| le_max_left _ _ |>.trans_lt <| lt_add_one _
     · exact sub_one_lt _ |>.trans_le <| min_le_right _ _ |>.trans <| neg_abs_le t₀
     · exact le_abs_self _ |>.trans_lt <| le_max_right _ _ |>.trans_lt <| lt_add_one _
-  exact ODE_solution_unique_of_mem_Ioo
+  exact IsIntegralCurveOn.eqOn_Ioo
     (fun t _ => hv t) Ht₀ (hf.isIntegralCurveOn _) (fun t _ => hfs t)
     (hg.isIntegralCurveOn _) (fun t _ => hgs t) heq Ht

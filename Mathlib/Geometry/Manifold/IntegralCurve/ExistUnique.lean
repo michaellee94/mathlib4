@@ -21,7 +21,7 @@ $C^1$ vector field. This follows from the existence theorem for solutions to ODE
 (`exists_forall_hasDerivAt_Ioo_eq_of_contDiffAt`).
 * `isMIntegralCurveOn_Ioo_eqOn_of_contMDiff_boundaryless`: Uniqueness of local integral curves for a
 $C^1$ vector field. This follows from the uniqueness theorem for solutions to ODEs
-(`ODE_solution_unique_of_mem_set_Ioo`). This requires the manifold to be Hausdorff (`T2Space`).
+(`IsIntegralCurveAt.eventuallyEq`). This requires the manifold to be Hausdorff (`T2Space`).
 
 ## Implementation notes
 
@@ -172,7 +172,7 @@ theorem isMIntegralCurveAt_eventuallyEq_of_contMDiffAt (hγt₀ : I.IsInteriorPo
   -- main proof
   suffices (extChartAt I (γ t₀)) ∘ γ =ᶠ[𝓝 t₀] (extChartAt I (γ' t₀)) ∘ γ' from
     (heq hγ).trans <| (this.fun_comp (extChartAt I (γ t₀)).symm).trans (h ▸ (heq hγ').symm)
-  exact ODE_solution_unique_of_eventually (.of_forall hlip)
+  exact IsIntegralCurveAt.eventuallyEq (.of_forall hlip)
     ((hdrv hγ rfl).mono fun _ ht ↦ ht.1) ((hdrv hγ rfl).mono fun _ ht ↦ ht.2)
     ((hdrv hγ' h).mono fun _ ht ↦ ht.1) ((hdrv hγ' h).mono fun _ ht ↦ ht.2)
     (by rw [Function.comp_apply, Function.comp_apply, h])

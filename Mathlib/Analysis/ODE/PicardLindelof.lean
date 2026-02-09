@@ -54,8 +54,8 @@ The public-facing existence theorems stated using the integral curve API are in
   certain quantities constructed from them can be shown more easily. When subtraction is involved,
   especially note whether it is the usual subtraction between two reals or the truncated subtraction
   between two non-negative reals.
-* In this file, We only prove the existence of a solution. For uniqueness, see `ODE_solution_unique`
-  and related theorems in `Mathlib/Analysis/ODE/Gronwall.lean`.
+* In this file, We only prove the existence of a solution. For uniqueness, see
+  `IsIntegralCurveOn.eqOn` and related theorems in `Mathlib/Analysis/ODE/ExistUnique.lean`.
 
 ## Tags
 
