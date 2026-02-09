@@ -295,24 +295,23 @@ def affineChart (f : V →L[K] K) (v : V) (hv : f v = 1) : OpenPartialHomeomorph
     refine (continuous_coinduced_rng (f := (mk' K : {x : V // x ≠ 0} → ℙ K V))).comp ?_
     exact (continuous_subtype_val.add continuous_const).subtype_mk _
 
-/-- Local alias for `_root_.SeparatingDual`, specialized to this file's notation. -/
-abbrev SeparatingDual : Prop := ∀ v : V, v ≠ 0 → ∃ f : V →L[K] K, f v ≠ 0
-
 omit [ContinuousAdd V] [ContinuousNeg V] [ContinuousSub V] [ContinuousSMul K V]
     [IsTopologicalDivisionRing K] [T1Space K] in
 /-- The dual separates points iff affine-chart domains cover projective space. -/
 theorem separatingDual_iff_range :
-    SeparatingDual (K := K) (V := V) ↔
-      (⋃ f : V →L[K] K, affineChartDomain (K := K) f) = Set.univ := by
+    _root_.SeparatingDual K V ↔ (⋃ f : V →L[K] K, affineChartDomain (K := K) f) = Set.univ := by
   constructor
   · intro h
+    rw [separatingDual_def] at h
     rw [Set.eq_univ_iff_forall]
     intro x
     induction x using Quotient.inductionOn' with
     | h v =>
       rcases h v v.2 with ⟨f, hf⟩
       exact Set.mem_iUnion.2 ⟨f, ⟨v, hf, rfl⟩⟩
-  · intro h v hv
+  · intro h
+    rw [separatingDual_def]
+    intro v hv
     have : mk' K ⟨v, hv⟩ ∈ ⋃ f : V →L[K] K, affineChartDomain f := by simp [h]
     simp only [Set.mem_iUnion, affineChartDomain, Set.mem_image, Set.mem_setOf_eq] at this
     rcases this with ⟨f, u, hfu, hua⟩
