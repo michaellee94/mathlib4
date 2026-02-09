@@ -304,17 +304,6 @@ theorem IsIntegralCurveAt.eventuallyEq
     (fun _ ht ↦ (h _ ht).2.1.1.hasDerivWithinAt) (fun _ ht ↦ (h _ ht).2.1.2)
     (fun _ ht ↦ (h _ ht).2.2.1.hasDerivWithinAt) (fun _ ht ↦ (h _ ht).2.2.2) heq
 
-/-- There exists only one solution of an ODE $\dot x=v(t, x)$ with
-a given initial value provided that the RHS is Lipschitz continuous in `x`. -/
-theorem IsIntegralCurveOn.eqOn
-    (hv : ∀ t, LipschitzWith K (v t))
-    (hf : ContinuousOn f (Icc a b)) (hf' : IsIntegralCurveOn f v (Ico a b))
-    (hg : ContinuousOn g (Icc a b)) (hg' : IsIntegralCurveOn g v (Ico a b))
-    (ha : f a = g a) :
-    EqOn f g (Icc a b) :=
-  IsIntegralCurveOn.eqOn_Icc_right (fun t _ ↦ (hv t).lipschitzOnWith) hf hf'
-    (fun _ _ ↦ mem_univ _) hg hg' (fun _ _ ↦ mem_univ _) ha
-
 /-- There exists only one global solution to an ODE $\dot x=v(t, x)$ with a given initial value
 provided that the RHS is Lipschitz continuous. -/
 theorem IsIntegralCurve.eq
