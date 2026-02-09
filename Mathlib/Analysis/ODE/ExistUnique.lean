@@ -15,13 +15,6 @@ of the integral curve API (`IsIntegralCurve`, `IsIntegralCurveOn`, `IsIntegralCu
 
 ## Main results
 
-* `ContDiffAt.exists_isIntegralCurveAt`: local existence of integral curves for a time-independent
-  $C^1$ vector field, via the Picard-Lindelöf theorem.
-* `isIntegralCurveAt_eventuallyEq`: local uniqueness of integral curves for a Lipschitz vector
-  field, via Gronwall's inequality.
-* `isIntegralCurveOn_Ioo_eqOn`: uniqueness of integral curves on an open interval.
-* `isIntegralCurve_eq`: global uniqueness of integral curves.
-
 ## Tags
 
 integral curve, vector field, existence, uniqueness, Picard-Lindelöf, Gronwall
