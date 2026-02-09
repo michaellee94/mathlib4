@@ -323,3 +323,36 @@ theorem IsIntegralCurve.eq
   exact IsIntegralCurveOn.eqOn_Ioo
     (fun t _ => hv t) Ht₀ (hf.isIntegralCurveOn _) (fun t _ => hfs t)
     (hg.isIntegralCurveOn _) (fun t _ => hgs t) heq Ht
+
+/-- If two integral curves of a Lipschitz vector field on connected sets `I` and `J` agree at a
+point `t₀ ∈ I ∩ J`, then they agree on all of `I ∩ J`. -/
+theorem IsIntegralCurveOn.eqOn_inter {I J : Set ℝ}
+    (hv : ∀ t ∈ I ∩ J, LipschitzOnWith K (v t) (s t))
+    (hI : IsPreconnected I) (hJ : IsPreconnected J) (htI : t₀ ∈ I) (htJ : t₀ ∈ J)
+    (hf : IsIntegralCurveOn f v I) (hfs : ∀ t ∈ I ∩ J, f t ∈ s t)
+    (hg : IsIntegralCurveOn g v J) (hgs : ∀ t ∈ I ∩ J, g t ∈ s t)
+    (heq : f t₀ = g t₀) :
+    EqOn f g (I ∩ J) := by
+  have hoc := hI.ordConnected.inter hJ.ordConnected
+  intro t ⟨htI', htJ'⟩
+  rcases lt_or_ge t t₀ with h | h
+  · have hss : Icc t t₀ ⊆ I ∩ J := hoc.out ⟨htI', htJ'⟩ ⟨htI, htJ⟩
+    exact eqOn_Icc_left
+      (fun t' ht' ↦ hv t' (hss (Ioc_subset_Icc_self ht')))
+      (hf.continuousOn.mono (hss.trans inter_subset_left))
+      (hf.mono ((Ioc_subset_Icc_self.trans hss).trans inter_subset_left))
+      (fun t' ht' ↦ hfs t' (hss (Ioc_subset_Icc_self ht')))
+      (hg.continuousOn.mono (hss.trans inter_subset_right))
+      (hg.mono ((Ioc_subset_Icc_self.trans hss).trans inter_subset_right))
+      (fun t' ht' ↦ hgs t' (hss (Ioc_subset_Icc_self ht')))
+      heq ⟨le_rfl, le_of_lt h⟩
+  · have hss : Icc t₀ t ⊆ I ∩ J := hoc.out ⟨htI, htJ⟩ ⟨htI', htJ'⟩
+    exact eqOn_Icc_right
+      (fun t' ht' ↦ hv t' (hss (Ico_subset_Icc_self ht')))
+      (hf.continuousOn.mono (hss.trans inter_subset_left))
+      (hf.mono ((Ico_subset_Icc_self.trans hss).trans inter_subset_left))
+      (fun t' ht' ↦ hfs t' (hss (Ico_subset_Icc_self ht')))
+      (hg.continuousOn.mono (hss.trans inter_subset_right))
+      (hg.mono ((Ico_subset_Icc_self.trans hss).trans inter_subset_right))
+      (fun t' ht' ↦ hgs t' (hss (Ico_subset_Icc_self ht')))
+      heq ⟨h, le_rfl⟩
