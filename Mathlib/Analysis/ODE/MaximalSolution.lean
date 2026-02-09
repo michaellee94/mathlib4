@@ -296,15 +296,6 @@ private def chainSup (C : Set (IsLocalIntegralCurveOn v t₀ x₀))
       rw [I_sup_eq_sUnion_c]
       exact isPreconnected_sUnion t₀ c h_common_pt h_preconn
     simpa [I_sup] using this
-  t₀_mem := by
-    obtain ⟨p, hp⟩ := hCne
-    exact Set.mem_iUnion₂.mpr ⟨p, hp, p.t₀_mem⟩
-  f_t₀ := by
-    have I_sup_t₀_mem : t₀ ∈ ⋃ (p : IsLocalIntegralCurveOn v t₀ x₀) (hp : p ∈ C), p.I := by
-      obtain ⟨p, hp⟩ := hCne
-      exact Set.mem_iUnion₂.mpr ⟨p, hp, p.t₀_mem⟩
-    simp only [dif_pos I_sup_t₀_mem]
-    exact (Classical.choose (Set.mem_iUnion₂.mp I_sup_t₀_mem)).f_t₀
   isIntegralCurveOn := by
     intro t ht
     obtain ⟨p, hp, htp⟩ := Set.mem_iUnion₂.mp ht
@@ -356,6 +347,15 @@ private def chainSup (C : Set (IsLocalIntegralCurveOn v t₀ x₀))
           (⋃ (p : IsLocalIntegralCurveOn v t₀ x₀) (hp : p ∈ C), p.I) t := by
       simpa [Set.mem_iUnion₂, h_eq_at_t'] using h_deriv'
     exact h_deriv
+  t₀_mem := by
+    obtain ⟨p, hp⟩ := hCne
+    exact Set.mem_iUnion₂.mpr ⟨p, hp, p.t₀_mem⟩
+  f_t₀ := by
+    have I_sup_t₀_mem : t₀ ∈ ⋃ (p : IsLocalIntegralCurveOn v t₀ x₀) (hp : p ∈ C), p.I := by
+      obtain ⟨p, hp⟩ := hCne
+      exact Set.mem_iUnion₂.mpr ⟨p, hp, p.t₀_mem⟩
+    simp only [dif_pos I_sup_t₀_mem]
+    exact (Classical.choose (Set.mem_iUnion₂.mp I_sup_t₀_mem)).f_t₀
 
 open Classical in
 /--
@@ -414,9 +414,9 @@ private def isLocalIntegralCurveOnNonempty [CompleteSpace E]
     I := Ioo tMin tMax
     isOpen_domain := isOpen_Ioo
     isPreconnected_domain := (isConnected_Ioo (htMin_lt_t₀.trans ht₀_lt_tMax)).isPreconnected
+    isIntegralCurveOn := hf₀_isIntegralCurveOn.mono Ioo_subset_Icc_self
     t₀_mem := ⟨htMin_lt_t₀, ht₀_lt_tMax⟩
     f_t₀ := by simpa [ht₀'_eq] using hf₀_t₀
-    isIntegralCurveOn := hf₀_isIntegralCurveOn.mono Ioo_subset_Icc_self
   }
   exact ⟨p₀⟩
 
@@ -453,13 +453,13 @@ theorem exists_maximal_solution
     { f := g, I := J,
       isOpen_domain := hJ_open,
       isPreconnected_domain := hJ_conn,
+      isIntegralCurveOn := hg_sol,
       t₀_mem := hIJ_subset maximal_element.t₀_mem,
       f_t₀ := by
         have h_eq_at_t₀ : g t₀ = maximal_element.f t₀ := by
           symm
           exact h_eq_on_I maximal_element.t₀_mem
-        simpa [h_eq_at_t₀] using maximal_element.f_t₀,
-      isIntegralCurveOn := hg_sol }
+        simpa [h_eq_at_t₀] using maximal_element.f_t₀ }
   exact h_I_ne_J (hIJ_subset.antisymm (h_is_max_elem (b := p_g) ⟨hIJ_subset, h_eq_on_I⟩).1)
 
 end
