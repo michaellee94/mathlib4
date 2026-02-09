@@ -126,6 +126,24 @@ theorem exists_forall_mem_closedBall_eq_isIntegralCurveOn
   have ⟨α, hα⟩ := exists_forall_mem_closedBall_eq_isIntegralCurveOn_lipschitzOnWith hf
   ⟨α, hα.1⟩
 
+@[deprecated (since := "2026-02-08")]
+alias exists_eq_forall_mem_Icc_hasDerivWithinAt := exists_eq_isIntegralCurveOn
+
+@[deprecated (since := "2026-02-08")]
+alias exists_eq_forall_mem_Icc_hasDerivWithinAt₀ := exists_eq_isIntegralCurveOn₀
+
+@[deprecated (since := "2026-02-08")]
+alias exists_forall_mem_closedBall_eq_hasDerivWithinAt_lipschitzOnWith :=
+  exists_forall_mem_closedBall_eq_isIntegralCurveOn_lipschitzOnWith
+
+@[deprecated (since := "2026-02-08")]
+alias exists_forall_mem_closedBall_eq_hasDerivWithinAt_continuousOn :=
+  exists_forall_mem_closedBall_eq_isIntegralCurveOn_continuousOn
+
+@[deprecated (since := "2026-02-08")]
+alias exists_forall_mem_closedBall_eq_forall_mem_Icc_hasDerivWithinAt :=
+  exists_forall_mem_closedBall_eq_isIntegralCurveOn
+
 end IsPicardLindelof
 
 /-! ## $C^1$ vector field -/
@@ -171,6 +189,17 @@ theorem exists_eventually_isIntegralCurveAt
   simp only [dif_pos hx]
   exact ⟨(hα x hx).1,
     (hα x hx).2.isIntegralCurveAt (Ioo_mem_nhds (by linarith) (by linarith))⟩
+
+@[deprecated (since := "2026-02-08")]
+alias exists_forall_mem_closedBall_exists_eq_forall_mem_Ioo_hasDerivAt :=
+  exists_forall_mem_closedBall_exists_eq_isIntegralCurveOn
+
+@[deprecated (since := "2026-02-08")]
+alias exists_forall_mem_closedBall_exists_eq_forall_mem_Ioo_hasDerivAt₀ :=
+  exists_eq_isIntegralCurveAt
+
+@[deprecated (since := "2026-02-08")]
+alias exists_eventually_eq_hasDerivAt := exists_eventually_isIntegralCurveAt
 
 end ContDiffAt
 
@@ -356,3 +385,21 @@ theorem IsIntegralCurveOn.eqOn_inter {I J : Set ℝ}
       (hg.mono ((Ico_subset_Icc_self.trans hss).trans inter_subset_right))
       (fun t' ht' ↦ hgs t' (hss (Ico_subset_Icc_self ht')))
       heq ⟨h, le_rfl⟩
+
+@[deprecated (since := "2026-02-08")]
+alias ODE_solution_unique_of_mem_Icc_right := IsIntegralCurveOn.eqOn_Icc_right
+
+@[deprecated (since := "2026-02-08")]
+alias ODE_solution_unique_of_mem_Icc_left := IsIntegralCurveOn.eqOn_Icc_left
+
+@[deprecated (since := "2026-02-08")]
+alias ODE_solution_unique_of_mem_Icc := IsIntegralCurveOn.eqOn_Icc
+
+@[deprecated (since := "2026-02-08")]
+alias ODE_solution_unique_of_mem_Ioo := IsIntegralCurveOn.eqOn_Ioo
+
+@[deprecated (since := "2026-02-08")]
+alias ODE_solution_unique_of_eventually := IsIntegralCurveAt.eventuallyEq
+
+@[deprecated (since := "2026-02-08")]
+alias ODE_solution_unique_univ := IsIntegralCurve.eq
