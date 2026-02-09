@@ -5,6 +5,7 @@ Authors: Winston Yin
 -/
 module
 
+public import Mathlib.Analysis.ODE.ExistUnique
 public import Mathlib.Analysis.ODE.Gronwall
 public import Mathlib.Analysis.ODE.PicardLindelof
 public import Mathlib.Geometry.Manifold.IntegralCurve.Transform
@@ -67,11 +68,9 @@ theorem exists_isMIntegralCurveAt_of_contMDiffAt [CompleteSpace E]
   obtain ⟨_, hv⟩ := hv
   -- use Picard-Lindelöf theorem to extract a solution to the ODE in the local chart
   obtain ⟨f, hf1, hf2⟩ := hv.contDiffAt (range_mem_nhds_isInteriorPoint hx)
-    |>.snd.exists_forall_mem_closedBall_exists_eq_forall_mem_Ioo_hasDerivAt₀ t₀
-  simp_rw [← Real.ball_eq_Ioo, ← Metric.eventually_nhds_iff_ball] at hf2
+    |>.snd.exists_eq_isIntegralCurveAt t₀
   -- use continuity of `f` so that `f t` remains inside `interior (extChartAt I x₀).target`
-  have ⟨a, ha, hf2'⟩ := Metric.eventually_nhds_iff_ball.mp hf2
-  have hcont := (hf2' t₀ (Metric.mem_ball_self ha)).continuousAt
+  have hcont := hf2.hasDerivAt.continuousAt
   rw [continuousAt_def, hf1] at hcont
   have hnhds : f ⁻¹' (interior (extChartAt I x₀).target) ∈ 𝓝 t₀ :=
     hcont _ (isOpen_interior.mem_nhds ((I.isInteriorPoint_iff).mp hx))

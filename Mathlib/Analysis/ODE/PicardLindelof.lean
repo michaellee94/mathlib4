@@ -37,7 +37,7 @@ repeated applications of the right-hand side of this equation.
 
 * `picard f t₀ x₀ α t`: the Picard iteration, applied to the curve `α`
 * `IsPicardLindelof`: the structure holding the assumptions of the Picard-Lindelöf theorem
-* `IsPicardLindelof.exists_eq_forall_mem_Icc_hasDerivWithinAt`: the existence theorem for local
+* `IsPicardLindelof.exists_eq_isIntegralCurveOn`: the existence theorem for local
   solutions to time-dependent ODEs
 * `IsPicardLindelof.exists_forall_mem_closedBall_eq_forall_mem_Icc_hasDerivWithinAt`: the existence
   theorem for local flows to time-dependent vector fields
