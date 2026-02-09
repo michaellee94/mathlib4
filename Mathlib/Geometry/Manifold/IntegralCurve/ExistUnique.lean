@@ -173,7 +173,9 @@ theorem isMIntegralCurveAt_eventuallyEq_of_contMDiffAt (hγt₀ : I.IsInteriorPo
   suffices (extChartAt I (γ t₀)) ∘ γ =ᶠ[𝓝 t₀] (extChartAt I (γ' t₀)) ∘ γ' from
     (heq hγ).trans <| (this.fun_comp (extChartAt I (γ t₀)).symm).trans (h ▸ (heq hγ').symm)
   exact ODE_solution_unique_of_eventually (.of_forall hlip)
-    (hdrv hγ rfl) (hdrv hγ' h) (by rw [Function.comp_apply, Function.comp_apply, h])
+    ((hdrv hγ rfl).mono fun _ ht ↦ ht.1) ((hdrv hγ rfl).mono fun _ ht ↦ ht.2)
+    ((hdrv hγ' h).mono fun _ ht ↦ ht.1) ((hdrv hγ' h).mono fun _ ht ↦ ht.2)
+    (by rw [Function.comp_apply, Function.comp_apply, h])
 
 @[deprecated (since := "2025-08-12")] alias isIntegralCurveAt_eventuallyEq_of_contMDiffAt :=
   isMIntegralCurveAt_eventuallyEq_of_contMDiffAt
