@@ -17,6 +17,19 @@ of the integral curve API (`IsIntegralCurve`, `IsIntegralCurveOn`, `IsIntegralCu
 
 ## Main results
 
+* `IsPicardLindelof.exists_eq_isIntegralCurveOn`: the Picard-Lindelöf theorem, stating the
+  existence of a local integral curve to a time-dependent ODE.
+* `IsPicardLindelof.exists_forall_mem_closedBall_eq_isIntegralCurveOn_lipschitzOnWith`: the
+  existence of a local flow that is Lipschitz continuous in the initial point.
+* `IsPicardLindelof.exists_forall_mem_closedBall_eq_isIntegralCurveOn_continuousOn`: the existence
+  of a local flow that is continuous on its domain as a map `E × ℝ → E`.
+* `IsPicardLindelof.exists_forall_mem_closedBall_eq_isIntegralCurveOn`: the existence of a local
+  flow to a time-dependent vector field.
+* `ContDiffAt.exists_forall_mem_closedBall_exists_eq_isIntegralCurveOn`: a `C¹` vector field
+  admits integral curves on open intervals for all nearby initial points.
+* `ContDiffAt.exists_eq_isIntegralCurveAt`: a `C¹` vector field admits a local integral curve.
+* `ContDiffAt.exists_eventually_isIntegralCurveAt`: a `C¹` vector field admits a local flow.
+
 ## Tags
 
 integral curve, vector field, existence, uniqueness, Picard-Lindelöf, Gronwall
