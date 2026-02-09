@@ -91,27 +91,30 @@ lemma IsIntegralCurveOn.subset_maximal_domain_with_lipschitz
       (by simp [hf_loc_t₀, hf_max_t₀])
   -- Glue the two integral curves along the overlap.
   let f_union (t : ℝ) : E := if t ∈ I_max then f_max t else f_loc t
-  have h_union_preconn : IsPreconnected (I_loc ∪ I_max) := by
-    exact IsPreconnected.union t₀ ht₀_loc ht₀_max h_loc_preconn h_max.isPreconnected_domain
-  have h_union_sol : IsIntegralCurveOn f_union v (I_loc ∪ I_max) := fun t ht ↦ by
-    by_cases ht_max : t ∈ I_max
-    · have heq : f_union =ᶠ[𝓝 t] f_max :=
-        Filter.mem_of_superset (h_max.isOpen_domain.mem_nhds ht_max) fun y hy ↦ if_pos hy
-      simp only [f_union, if_pos ht_max]
-      exact ((h_max.isIntegralCurveOn t ht_max).hasDerivAt
-        (h_max.isOpen_domain.mem_nhds ht_max)).congr_of_eventuallyEq heq |>.hasDerivWithinAt
-    · have ht_loc := ht.resolve_right ht_max
-      have heq : f_union =ᶠ[𝓝 t] f_loc :=
-        Filter.mem_of_superset (h_loc_open.mem_nhds ht_loc) fun y hy ↦ by
-          by_cases hy_max : y ∈ I_max
-          · simpa [f_union, hy_max] using (h_agree ⟨hy, hy_max⟩).symm
-          · simp [f_union, hy_max]
-      simp only [f_union, if_neg ht_max]
-      exact ((h_loc t ht_loc).hasDerivAt
-        (h_loc_open.mem_nhds ht_loc)).congr_of_eventuallyEq heq |>.hasDerivWithinAt
-  rw [h_max.is_maximal (g := f_union) (J := I_loc ∪ I_max) h_union_sol
-    (h_loc_open.union h_max.isOpen_domain) h_union_preconn subset_union_right
-    (fun t ht ↦ (if_pos ht).symm)]
+  have h_eq : I_max = I_loc ∪ I_max := by
+    refine h_max.is_maximal (g := f_union) (J := I_loc ∪ I_max) ?_ ?_ ?_ ?_ ?_
+    · rintro t ht
+      by_cases ht_max : t ∈ I_max
+      · have heq : f_union =ᶠ[𝓝 t] f_max :=
+          Filter.mem_of_superset (h_max.isOpen_domain.mem_nhds ht_max) fun y hy ↦ if_pos hy
+        simp only [f_union, if_pos ht_max]
+        exact ((h_max.isIntegralCurveOn t ht_max).hasDerivAt
+          (h_max.isOpen_domain.mem_nhds ht_max)).congr_of_eventuallyEq heq |>.hasDerivWithinAt
+      · have ht_loc := ht.resolve_right ht_max
+        have heq : f_union =ᶠ[𝓝 t] f_loc :=
+          Filter.mem_of_superset (h_loc_open.mem_nhds ht_loc) fun y hy ↦ by
+            by_cases hy_max : y ∈ I_max
+            · simpa [f_union, hy_max] using (h_agree ⟨hy, hy_max⟩).symm
+            · simp [f_union, hy_max]
+        simp only [f_union, if_neg ht_max]
+        exact ((h_loc t ht_loc).hasDerivAt
+          (h_loc_open.mem_nhds ht_loc)).congr_of_eventuallyEq heq |>.hasDerivWithinAt
+    · exact h_loc_open.union h_max.isOpen_domain
+    · exact IsPreconnected.union t₀ ht₀_loc ht₀_max h_loc_preconn h_max.isPreconnected_domain
+    · exact subset_union_right
+    · intro t ht
+      exact (if_pos ht).symm
+  rw [h_eq]
   exact subset_union_left
 
 /--
@@ -318,20 +321,17 @@ private lemma chainSup_is_upper_bound (C : Set (IsLocalIntegralCurveOn v t₀ x�
     (hC : IsChain (· ≤ ·) C) (hCne : C.Nonempty) :
     ∀ hp ∈ C, hp ≤ chainSup v t₀ x₀ C hC hCne := by
   intro hp hpC
-  refine ⟨fun t ht => Set.mem_iUnion₂.mpr ⟨hp, hpC, ht⟩, fun t ht => ?_⟩
-  have ht_in_I_sup : t ∈ (chainSup v t₀ x₀ C hC hCne).I :=
-    Set.mem_iUnion₂.mpr ⟨hp, hpC, ht⟩
-  have ht_in_I_sup' : t ∈ ⋃ (p : IsLocalIntegralCurveOn v t₀ x₀) (hp : p ∈ C), p.I := by
-    simpa [chainSup] using ht_in_I_sup
-  have ht_exists : ∃ i ∈ C, t ∈ i.I := by
-    simpa [Set.mem_iUnion₂] using ht_in_I_sup'
-  have h_eval : (chainSup v t₀ x₀ C hC hCne).f t =
-      (Classical.choose (Set.mem_iUnion₂.mp ht_in_I_sup')).f t := by
-    simp [chainSup, ht_exists]
-  rw [h_eval]
-  have spec := Classical.choose_spec (Set.mem_iUnion₂.mp ht_in_I_sup')
-  exact chain_solutions_agree (v := v) (t₀ := t₀) (x₀ := x₀) (C := C)
-    hC hpC spec.1 t ht spec.2
+  refine ⟨?_, ?_⟩
+  · intro t ht
+    exact Set.mem_iUnion₂.mpr ⟨hp, hpC, ht⟩
+  · intro t ht
+    have hchoose := Classical.choose_spec <| Set.mem_iUnion₂.mp <| show
+        t ∈ ⋃ (p : IsLocalIntegralCurveOn v t₀ x₀) (hp : p ∈ C), p.I from
+      Set.mem_iUnion₂.mpr ⟨hp, hpC, ht⟩
+    refine (chain_solutions_agree v t₀ x₀ hC hpC hchoose.1 t ht hchoose.2).trans ?_
+    simp only [chainSup, dif_pos (show
+      t ∈ ⋃ (p : IsLocalIntegralCurveOn v t₀ x₀) (hp : p ∈ C), p.I from
+        Set.mem_iUnion₂.mpr ⟨hp, hpC, ht⟩)]
 
 /--
 Helper lemma stating that any non-empty chain `C` has an upper bound.
