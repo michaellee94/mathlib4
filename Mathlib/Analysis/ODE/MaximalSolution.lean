@@ -130,17 +130,15 @@ theorem IsMaximalIntegralCurveOn.unique
   (hv_lip : ∀ t ∈ I₁ ∩ I₂, LipschitzWith K (v t)) :
   I₁ = I₂ ∧ EqOn f₁ f₂ I₁ := by
   have h_I₁_subset : I₁ ⊆ I₂ :=
-    h₁_max.isIntegralCurveOn.subset_maximal_domain_with_lipschitz
-      (v := v) (t₀ := t₀) (x₀ := x₀) h₁_max.isOpen_domain
+    h₁_max.isIntegralCurveOn.subset_maximal_domain_with_lipschitz v t₀ x₀ h₁_max.isOpen_domain
       h₁_max.isPreconnected_domain ht₀₁ hf₁_t₀ h₂_max ht₀₂ hf₂_t₀ hv_lip
   have h_I₂_subset : I₂ ⊆ I₁ :=
-    h₂_max.isIntegralCurveOn.subset_maximal_domain_with_lipschitz
-      (v := v) (t₀ := t₀) (x₀ := x₀) h₂_max.isOpen_domain
+    h₂_max.isIntegralCurveOn.subset_maximal_domain_with_lipschitz v t₀ x₀ h₂_max.isOpen_domain
       h₂_max.isPreconnected_domain ht₀₂ hf₂_t₀ h₁_max ht₀₁ hf₁_t₀
       (fun t ht ↦ hv_lip t ht.symm)
   have h_I_eq : I₁ = I₂ := h_I₁_subset.antisymm h_I₂_subset
   refine ⟨h_I_eq, ?_⟩
-  convert IsIntegralCurveOn.eqOn_inter (v := v) (s := fun _ ↦ univ) (t₀ := t₀)
+  convert IsIntegralCurveOn.eqOn_inter
     (fun t ht ↦ (hv_lip t ⟨ht.1, h_I_eq ▸ ht.1⟩).lipschitzOnWith)
     h₁_max.isPreconnected_domain
     (h_I_eq ▸ h₂_max.isPreconnected_domain)
@@ -277,85 +275,40 @@ private def chainSup (C : Set (IsLocalIntegralCurveOn v t₀ x₀))
       (Classical.choose (Set.mem_iUnion₂.mp ht)).f t
     else x₀
   isOpen_domain := by
-    simpa using isOpen_iUnion (fun p => isOpen_iUnion (fun _ => p.isOpen_domain))
+    exact isOpen_iUnion fun p => isOpen_iUnion fun _ => p.isOpen_domain
   isPreconnected_domain := by
-    let I_sup : Set ℝ := ⋃ (p : IsLocalIntegralCurveOn v t₀ x₀) (hp : p ∈ C), p.I
-    let c : Set (Set ℝ) := IsLocalIntegralCurveOn.I '' C
-    have h_common_pt : ∀ s ∈ c, t₀ ∈ s := by
-      rintro s ⟨p, hp, rfl⟩; exact p.t₀_mem
-    have h_preconn : ∀ s ∈ c, IsPreconnected s := by
-      rintro s ⟨p, hp, rfl⟩; exact p.isPreconnected_domain
-    have I_sup_eq_sUnion_c : I_sup = ⋃₀ c := by
-      ext x; simp only [mem_iUnion, exists_prop, mem_sUnion, I_sup]
-      constructor
-      · rintro ⟨p, hp, hx⟩
-        refine ⟨p.I, ?_, hx⟩
-        exact ⟨p, hp, rfl⟩
-      · rintro ⟨s, ⟨p', hp', rfl⟩, hx_in_s⟩; use p'
-    have : IsPreconnected I_sup := by
-      rw [I_sup_eq_sUnion_c]
-      exact isPreconnected_sUnion t₀ c h_common_pt h_preconn
-    simpa [I_sup] using this
+    rw [← Set.sUnion_image]
+    exact isPreconnected_sUnion t₀ _
+      (by rintro s ⟨p, _, rfl⟩; exact p.t₀_mem)
+      (by rintro s ⟨p, _, rfl⟩; exact p.isPreconnected_domain)
   isIntegralCurveOn := by
     intro t ht
     obtain ⟨p, hp, htp⟩ := Set.mem_iUnion₂.mp ht
-    have h_eq_eventually :
-        (fun y =>
-          if hy : y ∈ ⋃ (p : IsLocalIntegralCurveOn v t₀ x₀) (hp : p ∈ C), p.I then
-            (Classical.choose (Set.mem_iUnion₂.mp hy)).f y
-          else x₀) =ᶠ[𝓝 t] p.f := by
-      filter_upwards [p.isOpen_domain.mem_nhds htp] with y hy_in_pI
-      have hy_in_I_sup : y ∈ ⋃ (p : IsLocalIntegralCurveOn v t₀ x₀) (hp : p ∈ C), p.I :=
-        Set.mem_iUnion₂.mpr ⟨p, hp, hy_in_pI⟩
-      simp only [dif_pos hy_in_I_sup]
-      have spec := Classical.choose_spec (Set.mem_iUnion₂.mp hy_in_I_sup)
+    have heq : (fun t => if ht : t ∈ ⋃ q ∈ C, q.I
+        then (Classical.choose (Set.mem_iUnion₂.mp ht)).f t else x₀) =ᶠ[𝓝 t] p.f := by
+      filter_upwards [p.isOpen_domain.mem_nhds htp] with y hy
+      simp only [dif_pos (Set.mem_biUnion hp hy)]
       exact chain_solutions_agree (v := v) (t₀ := t₀) (x₀ := x₀) (C := C)
-        hC spec.1 hp y spec.2 hy_in_pI
-    have h_eq_at_t :
-        (if ht' : t ∈ ⋃ (p : IsLocalIntegralCurveOn v t₀ x₀) (hp : p ∈ C), p.I then
-          (Classical.choose (Set.mem_iUnion₂.mp ht')).f t
-        else x₀) = p.f t := by
+        hC (Classical.choose_spec (Set.mem_iUnion₂.mp (Set.mem_biUnion hp hy))).1 hp y
+        (Classical.choose_spec (Set.mem_iUnion₂.mp (Set.mem_biUnion hp hy))).2 hy
+    have hft : (if ht' : t ∈ ⋃ q ∈ C, q.I
+        then (Classical.choose (Set.mem_iUnion₂.mp ht')).f t else x₀) = p.f t := by
       simp only [dif_pos ht]
-      have spec := Classical.choose_spec (Set.mem_iUnion₂.mp ht)
       exact chain_solutions_agree (v := v) (t₀ := t₀) (x₀ := x₀) (C := C)
-        hC spec.1 hp t spec.2 htp
-    have h_eq_at_t' :
-        (if h : ∃ i ∈ C, t ∈ i.I then (Classical.choose h).f t else x₀) = p.f t := by
-      simpa [Set.mem_iUnion₂] using h_eq_at_t
-    have h_deriv' :
-        HasDerivWithinAt
-          (fun y =>
-            if hy : y ∈ ⋃ (p : IsLocalIntegralCurveOn v t₀ x₀) (hp : p ∈ C), p.I then
-              (Classical.choose (Set.mem_iUnion₂.mp hy)).f y
-            else x₀)
-          (v t (p.f t))
-          (⋃ (p : IsLocalIntegralCurveOn v t₀ x₀) (hp : p ∈ C), p.I) t := by
-      exact (((p.isIntegralCurveOn t htp).hasDerivAt
-        (p.isOpen_domain.mem_nhds htp)).congr_of_eventuallyEq
-          h_eq_eventually).hasDerivWithinAt
-    have h_deriv :
-        HasDerivWithinAt
-          (fun y =>
-            if hy : y ∈ ⋃ (p : IsLocalIntegralCurveOn v t₀ x₀) (hp : p ∈ C), p.I then
-              (Classical.choose (Set.mem_iUnion₂.mp hy)).f y
-            else x₀)
-          (v t
-            ((fun y =>
-              if hy : y ∈ ⋃ (p : IsLocalIntegralCurveOn v t₀ x₀) (hp : p ∈ C), p.I then
-                (Classical.choose (Set.mem_iUnion₂.mp hy)).f y
-              else x₀) t))
-          (⋃ (p : IsLocalIntegralCurveOn v t₀ x₀) (hp : p ∈ C), p.I) t := by
-      simpa [Set.mem_iUnion₂, h_eq_at_t'] using h_deriv'
-    exact h_deriv
+        hC (Classical.choose_spec (Set.mem_iUnion₂.mp ht)).1 hp t
+        (Classical.choose_spec (Set.mem_iUnion₂.mp ht)).2 htp
+    exact (((p.isIntegralCurveOn t htp).hasDerivAt
+        (p.isOpen_domain.mem_nhds htp)).congr_of_eventuallyEq heq |>.hasDerivWithinAt).congr_deriv
+      (congr_arg (v t) hft.symm)
   t₀_mem := by
     obtain ⟨p, hp⟩ := hCne
-    exact Set.mem_iUnion₂.mpr ⟨p, hp, p.t₀_mem⟩
+    exact Set.mem_biUnion hp p.t₀_mem
   f_t₀ := by
-    have I_sup_t₀_mem : t₀ ∈ ⋃ (p : IsLocalIntegralCurveOn v t₀ x₀) (hp : p ∈ C), p.I := by
+    have ht₀ : t₀ ∈ ⋃ p ∈ C, p.I := by
       obtain ⟨p, hp⟩ := hCne
-      exact Set.mem_iUnion₂.mpr ⟨p, hp, p.t₀_mem⟩
-    simp only [dif_pos I_sup_t₀_mem]
-    exact (Classical.choose (Set.mem_iUnion₂.mp I_sup_t₀_mem)).f_t₀
+      exact Set.mem_biUnion hp p.t₀_mem
+    simp only [dif_pos ht₀]
+    exact (Classical.choose (Set.mem_iUnion₂.mp ht₀)).f_t₀
 
 open Classical in
 /--
