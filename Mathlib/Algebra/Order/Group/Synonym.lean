@@ -3,14 +3,18 @@ Copyright (c) 2021 Yury Kudryashov. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Yury Kudryashov, Yaël Dillies
 -/
-import Mathlib.Algebra.Group.Defs
-import Mathlib.Order.Synonym
+module
+
+public import Mathlib.Algebra.Group.Defs
+public import Mathlib.Order.Synonym
 
 /-!
 # Group structure on the order type synonyms
 
 Transfer algebraic instances from `α` to `αᵒᵈ`, `Lex α`, and `Colex α`.
 -/
+
+@[expose] public section
 
 
 open OrderDual
@@ -105,7 +109,7 @@ theorem toDual_one [One α] : toDual (1 : α) = 1 := rfl
 theorem ofDual_one [One α] : (ofDual 1 : α) = 1 := rfl
 
 @[to_additive (attr := simp)] lemma toDual_eq_one [One α] {a : α} : toDual a = 1 ↔ a = 1 := .rfl
-@[to_additive (attr := simp)] lemma ofDual_eq_one [One α] {a : αᵒᵈ} : ofDual a = 1 ↔  a = 1 := .rfl
+@[to_additive (attr := simp)] lemma ofDual_eq_one [One α] {a : αᵒᵈ} : ofDual a = 1 ↔ a = 1 := .rfl
 
 @[to_additive (attr := simp)]
 theorem toDual_mul [Mul α] (a b : α) : toDual (a * b) = toDual a * toDual b := rfl

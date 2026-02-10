@@ -3,8 +3,12 @@ Copyright (c) 2015 Microsoft Corporation. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Leonardo de Moura, Jeremy Avigad, Mario Carneiro
 -/
-import Mathlib.Tactic.NormNum.Basic
-import Mathlib.Data.Nat.Prime.Basic
+module
+
+public import Mathlib.Data.Nat.Prime.Basic
+public meta import Mathlib.Data.Nat.Prime.Defs
+public import Mathlib.Tactic.NormNum.Basic
+public meta import Mathlib.Tactic.NormNum.Result
 
 /-!
 # `norm_num` extensions on natural numbers
@@ -23,6 +27,8 @@ generate a proof that has a smaller depth.
 Note: `evalMinFac.aux` does not raise a stack overflow, which can be checked by replacing the
 `prf'` in the recursive call by something like `(.sort .zero)`
 -/
+
+public meta section
 
 open Nat Qq Lean Meta
 
@@ -119,7 +125,7 @@ theorem isNat_minFac_4 : {n n' k : ℕ} →
 /-- The `norm_num` extension which identifies expressions of the form `minFac n`. -/
 @[norm_num Nat.minFac _] partial def evalMinFac : NormNumExt where eval {_ _} e := do
   let .app (.const ``Nat.minFac _) (n : Q(ℕ)) ← whnfR e | failure
-  let sℕ : Q(AddMonoidWithOne ℕ) := q(instAddMonoidWithOneNat)
+  let sℕ : Q(AddMonoidWithOne ℕ) := q(Nat.instAddMonoidWithOne)
   let ⟨nn, pn⟩ ← deriveNat n sℕ
   let n' := nn.natLit!
   let rec aux (ek : Q(ℕ)) (prf : Q(MinFacHelper $nn $ek)) :

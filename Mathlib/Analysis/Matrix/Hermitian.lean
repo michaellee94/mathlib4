@@ -3,8 +3,10 @@ Copyright (c) 2022 Alexander Bentkamp. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Bentkamp
 -/
-import Mathlib.Analysis.InnerProductSpace.PiL2
-import Mathlib.LinearAlgebra.Matrix.Hermitian
+module
+
+public import Mathlib.Analysis.InnerProductSpace.PiL2
+public import Mathlib.LinearAlgebra.Matrix.Hermitian
 
 /-!
 # Hermitian matrices over ℝ and ℂ
@@ -16,6 +18,8 @@ linear map is self-adjoint.
 
 self-adjoint matrix, hermitian matrix
 -/
+
+public section
 
 -- TODO:
 -- assert_not_exists MonoidAlgebra
@@ -38,7 +42,7 @@ lemma IsHermitian.coe_re_diag (h : A.IsHermitian) : (fun i => (re (A.diag i) : �
 lemma isHermitian_iff_isSymmetric [Fintype n] [DecidableEq n] :
     IsHermitian A ↔ A.toEuclideanLin.IsSymmetric := by
   rw [LinearMap.IsSymmetric, (WithLp.toLp_surjective _).forall₂]
-  simp only [toEuclideanLin_toLp, Matrix.toLin'_apply, EuclideanSpace.inner_eq_star_dotProduct,
+  simp only [toLpLin_toLp, Matrix.toLin'_apply, EuclideanSpace.inner_eq_star_dotProduct,
     star_mulVec]
   constructor
   · rintro (h : Aᴴ = A) x y

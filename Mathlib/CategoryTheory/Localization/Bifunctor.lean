@@ -3,8 +3,10 @@ Copyright (c) 2023 Joël Riou. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Joël Riou
 -/
-import Mathlib.CategoryTheory.Localization.Prod
-import Mathlib.CategoryTheory.Functor.Currying
+module
+
+public import Mathlib.CategoryTheory.Localization.Prod
+public import Mathlib.CategoryTheory.Functor.Currying
 
 /-!
 # Lifting of bifunctors
@@ -27,12 +29,14 @@ which lifts `F`.
 
 -/
 
+@[expose] public section
+
 namespace CategoryTheory
 
 open Category Functor
 
-variable {C₁ C₂ D₁ D₂ E E' : Type*} [Category C₁] [Category C₂]
-  [Category D₁] [Category D₂] [Category E] [Category E']
+variable {C₁ C₂ D₁ D₂ E E' : Type*} [Category* C₁] [Category* C₂]
+  [Category* D₁] [Category* D₂] [Category* E] [Category* E']
 
 namespace MorphismProperty
 
@@ -135,7 +139,7 @@ variable (L₁ : C₁ ⥤ D₁) (L₂ : C₂ ⥤ D₂)
   (F : C₁ ⥤ C₂ ⥤ E) (F' : D₁ ⥤ D₂ ⥤ E)
   [Lifting₂ L₁ L₂ W₁ W₂ F F']
 
-noncomputable instance Lifting₂.compRight {E' : Type*} [Category E'] (G : E ⥤ E') :
+noncomputable instance Lifting₂.compRight {E' : Type*} [Category* E'] (G : E ⥤ E') :
     Lifting₂ L₁ L₂ W₁ W₂
       (F ⋙ (whiskeringRight _ _ _).obj G)
       (F' ⋙ (whiskeringRight _ _ _).obj G) :=

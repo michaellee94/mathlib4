@@ -3,13 +3,15 @@ Copyright (c) 2018 Mario Carneiro. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Mario Carneiro, Johan Commelin
 -/
-import Mathlib.Algebra.Group.TypeTags.Basic
-import Mathlib.Algebra.Group.WithOne.Defs
-import Mathlib.Algebra.GroupWithZero.Equiv
-import Mathlib.Algebra.GroupWithZero.Units.Basic
-import Mathlib.Data.Nat.Cast.Defs
-import Mathlib.Data.Option.Basic
-import Mathlib.Data.Option.NAry
+module
+
+public import Mathlib.Algebra.Group.TypeTags.Basic
+public import Mathlib.Algebra.Group.WithOne.Defs
+public import Mathlib.Algebra.GroupWithZero.Equiv
+public import Mathlib.Algebra.GroupWithZero.Units.Basic
+public import Mathlib.Data.Nat.Cast.Defs
+public import Mathlib.Data.Option.Basic
+public import Mathlib.Data.Option.NAry
 
 /-!
 # Adjoining a zero to a group
@@ -33,6 +35,8 @@ In scope `WithZero`:
 * `WithZero.exp`: The "exponential map" `M → Mᵐ⁰`
 * `WithZero.exp`: The "logarithm" `Mᵐ⁰ → M`
 -/
+
+@[expose] public section
 
 open Function
 
@@ -87,6 +91,7 @@ instance instMulZeroOneClass [MulOneClass α] : MulZeroOneClass (WithZero α) wh
   one_mul := Option.map₂_left_identity one_mul
   mul_one := Option.map₂_right_identity mul_one
 
+set_option linter.style.whitespace false in -- manual alignment is not recognised
 /-- Coercion as a monoid hom. -/
 @[simps apply]
 def coeMonoidHom : α →* WithZero α where

@@ -3,12 +3,13 @@ Copyright (c) 2025 Michael Rothgang. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Patrick Massot, Michael Rothgang
 -/
-import Mathlib.Geometry.Manifold.Algebra.Monoid
-import Mathlib.Geometry.Manifold.Notation
-import Mathlib.Geometry.Manifold.VectorBundle.MDifferentiable
-import Mathlib.Geometry.Manifold.VectorBundle.SmoothSection
+module
 import Mathlib.Tactic.ByCases
 
+public import Mathlib.Geometry.Manifold.Algebra.Monoid
+public import Mathlib.Geometry.Manifold.Notation
+public import Mathlib.Geometry.Manifold.VectorBundle.MDifferentiable
+public import Mathlib.Geometry.Manifold.VectorBundle.SmoothSection
 
 /-!
 # Local frames in a vector bundle
@@ -27,9 +28,10 @@ Any section `s` of `e` can be uniquely written as `s = ∑ i, f^i sᵢ` near `x`
 and `s` is smooth at `x` iff the functions `f^i` are.
 
 In this file, we prove the latter statement for finite-rank bundles (with coefficients in a
-complete field). In `OrthonormalFrame.lean`, we will prove the same for real vector bundles of any
-rank which admit a `C^n` bundle metric. This includes bundles of finite rank, modelled on a Hilbert
-space or on a Banach space which has smooth partitions of unity.
+complete field). In the planned file `Mathlib/Geometry/Manifold/VectorBundle/OrthonormalFrame.lean`
+(#26221), we will prove the same for real vector bundles of any rank which admit a `C^n` bundle
+metric. This includes bundles of finite rank, modelled on a Hilbert space or on a Banach space which
+has smooth partitions of unity.
 
 We will use this to construct local extensions of a vector to a section which is smooth on the
 trivialisation domain.
@@ -81,6 +83,8 @@ the model fiber `F`.
   iff all of its frame coefficients are
 
 ## TODO
+
+Strengthen the proof of smoothness in terms of the local frame coefficients.
 * `IsLocalFrameOn.contMDiffOn_coeff hs`: if `t` is a `C^k` section, each coefficient
   `hs.coeff i t` is `C^k` on `U`
 * `IsLocalFrameOn.contMDiffAt_iff_coeff hs`: a section `t` is `C^k` at `x ∈ U`
@@ -98,6 +102,8 @@ only meaningful on the set on which they are a local frame.
 vector bundle, local frame, smoothness
 
 -/
+
+@[expose] public section
 open Bundle Filter Function Topology Module
 
 open scoped Bundle Manifold ContDiff
@@ -171,13 +177,16 @@ lemma toBasisAt_coe (hs : IsLocalFrameOn I F n s u) (hx : x ∈ u) (i : ι) :
 
 /-- If `{sᵢ}` is a local frame on a vector bundle, `F` being finite-dimensional implies the
 indexing set being finite. -/
-def fintype_of_finiteDimensional [VectorBundle 𝕜 F V] [FiniteDimensional 𝕜 F]
+noncomputable def fintypeOfFiniteDimensional [VectorBundle 𝕜 F V] [FiniteDimensional 𝕜 F]
     (hs : IsLocalFrameOn I F n s u) (hx : x ∈ u) : Fintype ι := by
   have : FiniteDimensional 𝕜 (V x) := by
     let phi := (trivializationAt F V x).linearEquivAt 𝕜 x
       (FiberBundle.mem_baseSet_trivializationAt' x)
     exact Finite.equiv phi.symm
   exact FiniteDimensional.fintypeBasisIndex (hs.toBasisAt hx)
+
+@[deprecated (since := "2025-12-19")]
+alias fintype_of_finiteDimensional := fintypeOfFiniteDimensional
 
 open scoped Classical in
 /-- Coefficients of a section `s` of `V` w.r.t. a local frame `{s i}` on `u`.
@@ -199,7 +208,7 @@ lemma coeff_apply_of_mem (hs : IsLocalFrameOn I F n s u) (hx : x ∈ u) (t : Π 
 
 -- TODO: add uniqueness of the decomposition; follows from the IsBasis property in the definition
 
-lemma coeff_sum_eq [Fintype ι] (hs : IsLocalFrameOn I F n s u) (t : Π x : M,  V x) (hx : x ∈ u) :
+lemma coeff_sum_eq [Fintype ι] (hs : IsLocalFrameOn I F n s u) (t : Π x : M, V x) (hx : x ∈ u) :
     t x = ∑ i, (hs.coeff i x (t x)) • (s i x) := by
   simpa [coeff, hx] using (Basis.sum_repr (hs.toBasisAt hx) (t x)).symm
 
@@ -223,7 +232,7 @@ lemma coeff_congr (hs : IsLocalFrameOn I F n s u) (htt' : t x = t' x) (i : ι) :
 /-- If `s` and `s'` are local frames which are equal at `x`,
 a section `t` has equal frame coefficients in them. -/
 lemma coeff_eq_of_eq (hs : IsLocalFrameOn I F n s u) (hs' : IsLocalFrameOn I F n s' u)
-    (hss' : ∀ i, s i x = s' i x) {t : Π x : M,  V x} (i : ι) :
+    (hss' : ∀ i, s i x = s' i x) {t : Π x : M, V x} (i : ι) :
     hs.coeff i x (t x) = hs'.coeff i x (t x) := by
   by_cases hxe : x ∈ u
   · simp [coeff, hxe]
@@ -251,7 +260,7 @@ then `t` is `C^n` on `u`. -/
 lemma contMDiffOn_of_coeff [FiniteDimensional 𝕜 F] (h : ∀ i, CMDiff[u] n (hs.coeff i t)) :
     CMDiff[u] n (T% t) := by
   rcases u.eq_empty_or_nonempty with rfl | ⟨x, hx⟩; · simp
-  have := fintype_of_finiteDimensional hs hx
+  have := fintypeOfFiniteDimensional hs hx
   have this (i) : CMDiff[u] n (T% (hs.coeff i t • s i)) :=
     (h i).smul_section (hs.contMDiffOn i)
   have almost : CMDiff[u] n (T% (fun x ↦ ∑ i, (hs.coeff i t) x • s i x)) :=
@@ -264,7 +273,7 @@ lemma contMDiffOn_of_coeff [FiniteDimensional 𝕜 F] (h : ∀ i, CMDiff[u] n (h
 if a section `t` has `C^k` coefficients at `x` w.r.t. `s i`, then `t` is `C^n` at `x`. -/
 lemma contMDiffAt_of_coeff [FiniteDimensional 𝕜 F]
     (h : ∀ i, CMDiffAt n (hs.coeff i t) x) (hu : u ∈ 𝓝 x) : CMDiffAt n (T% t) x := by
-  have := fintype_of_finiteDimensional hs (mem_of_mem_nhds hu)
+  have := fintypeOfFiniteDimensional hs (mem_of_mem_nhds hu)
   have almost : CMDiffAt n (T% (fun x ↦ ∑ i, (hs.coeff i t) x • s i x)) x :=
     .sum_section (fun i _ ↦ (h i).smul_section <| (hs.contMDiffOn i).contMDiffAt hu)
   exact almost.congr_of_eventuallyEq <| (hs.eventually_eq_sum_coeff_smul t hu).mono (by simp)
@@ -273,7 +282,7 @@ lemma contMDiffAt_of_coeff [FiniteDimensional 𝕜 F]
 coefficients at `x ∈ u` w.r.t. `s i`, then `t` is `C^n` at `x`. -/
 lemma contMDiffAt_of_coeff_aux [FiniteDimensional 𝕜 F] (h : ∀ i, CMDiffAt n (hs.coeff i t) x)
     (hu : IsOpen u) (hx : x ∈ u) : CMDiffAt n (T% t) x := by
-  have := fintype_of_finiteDimensional hs hx
+  have := fintypeOfFiniteDimensional hs hx
   exact hs.contMDiffAt_of_coeff h (hu.mem_nhds hx)
 
 section
@@ -285,9 +294,9 @@ w.r.t. `s i`, then `t` is differentiable on `u`. -/
 lemma mdifferentiableOn_of_coeff [FiniteDimensional 𝕜 F] (h : ∀ i, MDiff[u] (hs.coeff i t)) :
     MDiff[u] (T% t) := by
   rcases u.eq_empty_or_nonempty with rfl | ⟨x, hx⟩; · simp
-  have := fintype_of_finiteDimensional hs hx
+  have := fintypeOfFiniteDimensional hs hx
   have this (i) : MDiff[u] (T% (hs.coeff i t • s i)) :=
-    (h i).smul_section ((hs.contMDiffOn i).mdifferentiableOn le_rfl)
+    (h i).smul_section ((hs.contMDiffOn i).mdifferentiableOn one_ne_zero)
   have almost : MDiff[u] (T% (fun x ↦ ∑ i, (hs.coeff i t) x • s i x)) :=
     .sum_section (fun i _ hx ↦ this i _ hx)
   apply almost.congr
@@ -298,10 +307,10 @@ lemma mdifferentiableOn_of_coeff [FiniteDimensional 𝕜 F] (h : ∀ i, MDiff[u]
 coefficients at `x` w.r.t. `s i`, then `t` is differentiable at `x`. -/
 lemma mdifferentiableAt_of_coeff [FiniteDimensional 𝕜 F]
     (h : ∀ i, MDiffAt (hs.coeff i t) x) (hu : u ∈ 𝓝 x) : MDiffAt (T% t) x := by
-  have := fintype_of_finiteDimensional hs (mem_of_mem_nhds hu)
+  have := fintypeOfFiniteDimensional hs (mem_of_mem_nhds hu)
   have almost : MDiffAt (T% (fun x ↦ ∑ i, (hs.coeff i t) x • s i x)) x :=
     .sum_section (fun i ↦ (h i).smul_section <|
-      ((hs.contMDiffOn i).mdifferentiableOn le_rfl).mdifferentiableAt hu)
+      ((hs.contMDiffOn i).mdifferentiableOn one_ne_zero).mdifferentiableAt hu)
   exact almost.congr_of_eventuallyEq <| (hs.eventually_eq_sum_coeff_smul t hu).mono (by simp)
 
 /-- Given a local frame `s i` on open set `u` containing `x`, if a section `t`

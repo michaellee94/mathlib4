@@ -3,8 +3,10 @@ Copyright (c) 2019 Reid Barton. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Johannes Hölzl, Patrick Massot, Sébastien Gouëzel, Zhouhang Zhou, Reid Barton
 -/
-import Mathlib.Topology.ContinuousMap.Defs
-import Mathlib.Topology.Maps.Basic
+module
+
+public import Mathlib.Topology.ContinuousMap.Defs
+public import Mathlib.Topology.Maps.Basic
 
 /-!
 # Homeomorphisms
@@ -30,6 +32,8 @@ directions continuous. We denote homeomorphisms with the notation `≃ₜ`.
 * `IsHomeomorph`: the predicate that a function is a homeomorphism
 
 -/
+
+@[expose] public section
 
 open Set Topology Filter
 
@@ -225,6 +229,20 @@ protected theorem discreteTopology [DiscreteTopology X] (h : X ≃ₜ Y) : Discr
 theorem discreteTopology_iff (h : X ≃ₜ Y) : DiscreteTopology X ↔ DiscreteTopology Y :=
   ⟨fun _ ↦ h.discreteTopology, fun _ ↦ h.symm.discreteTopology⟩
 
+protected theorem indiscreteTopology [IndiscreteTopology X] (h : X ≃ₜ Y) :
+    IndiscreteTopology Y :=
+  h.symm.isInducing.indiscreteTopology
+
+theorem indiscreteTopology_iff (h : X ≃ₜ Y) : IndiscreteTopology X ↔ IndiscreteTopology Y :=
+  ⟨fun _ ↦ h.indiscreteTopology, fun _ ↦ h.symm.indiscreteTopology⟩
+
+protected theorem nontrivialTopology [NontrivialTopology X] (h : X ≃ₜ Y) :
+    NontrivialTopology Y :=
+  h.isInducing.nontrivialTopology
+
+theorem nontrivialTopology_iff (h : X ≃ₜ Y) : NontrivialTopology X ↔ NontrivialTopology Y :=
+  ⟨fun _ ↦ h.nontrivialTopology, fun _ ↦ h.symm.nontrivialTopology⟩
+
 @[simp]
 theorem isOpen_preimage (h : X ≃ₜ Y) {s : Set Y} : IsOpen (h ⁻¹' s) ↔ IsOpen s :=
   h.isQuotientMap.isOpen_preimage
@@ -324,6 +342,11 @@ theorem nhds_eq_comap (h : X ≃ₜ Y) (x : X) : 𝓝 x = comap h (𝓝 (h x)) :
 theorem comap_nhds_eq (h : X ≃ₜ Y) (y : Y) : comap h (𝓝 y) = 𝓝 (h.symm y) := by
   rw [h.nhds_eq_comap, h.apply_symm_apply]
 
+theorem isClosed_setOf_iff {p : X → Prop} {q : Y → Prop} (f : X ≃ₜ Y) (hs : IsClopen {x | p x})
+    (ht : IsClopen {y | q y}) : IsClosed { x : X | p x ↔ q (f x) } := by
+  simpa [iff_def] using (isClosed_imp hs.2 (f.isClosed_preimage.2 ht.1)).inter
+    (isClosed_imp (f.isOpen_preimage.2 ht.2) hs.1)
+
 end Homeomorph
 
 namespace Equiv
@@ -334,7 +357,7 @@ variable {Z : Type*} [TopologicalSpace X] [TopologicalSpace Y] [TopologicalSpace
 def toHomeomorph (e : X ≃ Y) (he : ∀ s, IsOpen (e ⁻¹' s) ↔ IsOpen s) : X ≃ₜ Y where
   toEquiv := e
   continuous_toFun := continuous_def.2 fun _ ↦ (he _).2
-  continuous_invFun := continuous_def.2 fun s ↦ by convert (he _).1; simp
+  continuous_invFun := continuous_def.2 fun s ↦ by simpa using (he (e.symm ⁻¹' s)).1
 
 @[deprecated (since := "2025-10-09")] alias toHomeomorph_toEquiv := toEquiv_toHomeomorph
 
@@ -434,7 +457,7 @@ theorem toHomeomorph_injective [HomeomorphClass F α β] : Function.Injective ((
   fun _ _ e ↦ DFunLike.ext _ _ fun a ↦ congr_arg (fun e : α ≃ₜ β ↦ e.toFun a) e
 
 instance [HomeomorphClass F α β] : ContinuousMapClass F α β where
-  map_continuous  f := map_continuous f
+  map_continuous f := map_continuous f
 
 instance : HomeomorphClass (α ≃ₜ β) α β where
   map_continuous e := e.continuous_toFun

@@ -3,8 +3,10 @@ Copyright (c) 2022 Alexander Bentkamp. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Bentkamp, Mohanad Ahmed
 -/
-import Mathlib.Analysis.Matrix.Spectrum
-import Mathlib.LinearAlgebra.Matrix.PosDef
+module
+
+public import Mathlib.Analysis.Matrix.Spectrum
+public import Mathlib.LinearAlgebra.Matrix.PosDef
 
 /-!
 # Spectrum of positive (semi)definite matrices
@@ -13,10 +15,12 @@ This file proves that eigenvalues of positive (semi)definite matrices are (nonne
 
 ## Main definitions
 
-* `InnerProductSpace.ofMatrix`: the inner product on `n → 𝕜` induced by a positive definite
-  matrix `A`, and is given by `⟪x, y⟫ = xᴴMy`.
+* `Matrix.toInnerProductSpace`: the pre-inner product space on `n → 𝕜` induced by a
+  positive semi-definite matrix `M`, and is given by `⟪x, y⟫ = xᴴMy`.
 
 -/
+
+@[expose] public section
 
 open WithLp Matrix Unitary
 open scoped ComplexOrder
@@ -42,7 +46,7 @@ lemma eigenvalues_nonneg [DecidableEq n] (hA : A.PosSemidef) (i : n) : 0 ≤ hA.
   hA.isHermitian.posSemidef_iff_eigenvalues_nonneg.mp hA _
 
 lemma re_dotProduct_nonneg (hA : A.PosSemidef) (x : n → 𝕜) : 0 ≤ RCLike.re (star x ⬝ᵥ (A *ᵥ x)) :=
-  RCLike.nonneg_iff.mp (hA.2 _) |>.1
+  RCLike.nonneg_iff.mp (hA.dotProduct_mulVec_nonneg _) |>.1
 
 lemma det_nonneg [DecidableEq n] (hA : A.PosSemidef) : 0 ≤ A.det := by
   rw [hA.isHermitian.det_eq_prod_eigenvalues]
@@ -75,7 +79,7 @@ lemma IsHermitian.posDef_iff_eigenvalues_pos [DecidableEq n] (hA : A.IsHermitian
 namespace PosDef
 
 lemma re_dotProduct_pos (hA : A.PosDef) {x : n → 𝕜} (hx : x ≠ 0) :
-    0 < RCLike.re (star x ⬝ᵥ (A *ᵥ x)) := RCLike.pos_iff.mp (hA.2 _ hx) |>.1
+    0 < RCLike.re (star x ⬝ᵥ (A *ᵥ x)) := RCLike.pos_iff.mp (hA.dotProduct_mulVec_pos hx) |>.1
 
 /-- The eigenvalues of a positive definite matrix are positive. -/
 lemma eigenvalues_pos [DecidableEq n] (hA : A.PosDef) (i : n) : 0 < hA.1.eigenvalues i :=
@@ -89,23 +93,44 @@ lemma det_pos [DecidableEq n] (hA : A.PosDef) : 0 < det A := by
 
 end PosDef
 
-/-- A positive definite matrix `A` induces a norm `‖x‖ = sqrt (re xᴴMx)`. -/
-noncomputable abbrev NormedAddCommGroup.ofMatrix (hA : A.PosDef) : NormedAddCommGroup (n → 𝕜) :=
-  @InnerProductSpace.Core.toNormedAddCommGroup _ _ _ _ _
-    { inner x y := (A *ᵥ y) ⬝ᵥ star x
-      conj_inner_symm x y := by
-        rw [dotProduct_comm, star_dotProduct, starRingEnd_apply, star_star,
-          star_mulVec, dotProduct_comm (A *ᵥ y), dotProduct_mulVec, hA.isHermitian.eq]
-      re_inner_nonneg x := dotProduct_comm _ (star x) ▸ hA.posSemidef.re_dotProduct_nonneg x
-      definite x (hx : _ ⬝ᵥ _ = 0) := by
-        by_contra! h
-        simpa [hx, lt_irrefl, dotProduct_comm] using hA.re_dotProduct_pos h
-      add_left := by simp only [star_add, dotProduct_add, forall_const]
-      smul_left _ _ _ := by rw [← smul_eq_mul, ← dotProduct_smul, starRingEnd_apply, ← star_smul] }
+set_option backward.privateInPublic true in
+/-- The pre-inner product space structure implementation. Only an auxiliary for
+`Matrix.toSeminormedAddCommGroup`, `Matrix.toNormedAddCommGroup`,
+and `Matrix.toInnerProductSpace`. -/
+private def PosSemidef.preInnerProductSpace {M : Matrix n n 𝕜} (hM : M.PosSemidef) :
+    PreInnerProductSpace.Core 𝕜 (n → 𝕜) where
+  inner x y := (M *ᵥ y) ⬝ᵥ star x
+  conj_inner_symm x y := by
+    rw [dotProduct_comm, star_dotProduct, starRingEnd_apply, star_star,
+      star_mulVec, dotProduct_comm (M *ᵥ y), dotProduct_mulVec, hM.isHermitian.eq]
+  re_inner_nonneg x := dotProduct_comm _ (star x) ▸ hM.re_dotProduct_nonneg x
+  add_left := by simp only [star_add, dotProduct_add, forall_const]
+  smul_left _ _ _ := by rw [← smul_eq_mul, ← dotProduct_smul, starRingEnd_apply, ← star_smul]
 
-/-- A positive definite matrix `A` induces an inner product `⟪x, y⟫ = xᴴMy`. -/
-def InnerProductSpace.ofMatrix (hA : A.PosDef) :
-    @InnerProductSpace 𝕜 (n → 𝕜) _ (NormedAddCommGroup.ofMatrix hA).toSeminormedAddCommGroup :=
+set_option backward.privateInPublic true in
+set_option backward.privateInPublic.warn false in
+/-- A positive semi-definite matrix `M` induces a norm `‖x‖ = sqrt (re xᴴMx)`. -/
+noncomputable abbrev toSeminormedAddCommGroup (M : Matrix n n 𝕜) (hM : M.PosSemidef) :
+    SeminormedAddCommGroup (n → 𝕜) :=
+  @InnerProductSpace.Core.toSeminormedAddCommGroup _ _ _ _ _ hM.preInnerProductSpace
+
+set_option backward.privateInPublic true in
+set_option backward.privateInPublic.warn false in
+/-- A positive definite matrix `M` induces a norm `‖x‖ = sqrt (re xᴴMx)`. -/
+noncomputable abbrev toNormedAddCommGroup (M : Matrix n n 𝕜) (hM : M.PosDef) :
+    NormedAddCommGroup (n → 𝕜) :=
+  @InnerProductSpace.Core.toNormedAddCommGroup _ _ _ _ _
+  { __ := hM.posSemidef.preInnerProductSpace
+    definite x (hx : _ ⬝ᵥ _ = 0) := by
+      by_contra! h
+      simpa [hx, lt_irrefl, dotProduct_comm] using hM.re_dotProduct_pos h }
+
+/-- A positive semi-definite matrix `M` induces an inner product `⟪x, y⟫ = xᴴMy`. -/
+def toInnerProductSpace (M : Matrix n n 𝕜) (hM : M.PosSemidef) :
+    @InnerProductSpace 𝕜 (n → 𝕜) _ (M.toSeminormedAddCommGroup hM) :=
   InnerProductSpace.ofCore _
+
+@[deprecated (since := "2025-10-26")] alias NormedAddCommGroup.ofMatrix := toNormedAddCommGroup
+@[deprecated (since := "2025-10-26")] alias InnerProductSpace.ofMatrix := toInnerProductSpace
 
 end Matrix

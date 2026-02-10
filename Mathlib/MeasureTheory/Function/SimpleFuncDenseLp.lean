@@ -3,9 +3,11 @@ Copyright (c) 2022 Zhouhang Zhou. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Zhouhang Zhou, Yury Kudryashov, Heather Macbeth
 -/
-import Mathlib.MeasureTheory.Function.L1Space.AEEqFun
-import Mathlib.MeasureTheory.Function.LpSpace.Complete
-import Mathlib.MeasureTheory.Function.LpSpace.Indicator
+module
+
+public import Mathlib.MeasureTheory.Function.L1Space.AEEqFun
+public import Mathlib.MeasureTheory.Function.LpSpace.Complete
+public import Mathlib.MeasureTheory.Function.LpSpace.Indicator
 
 /-!
 # Density of simple functions
@@ -39,6 +41,8 @@ For `E` finite-dimensional, simple functions `α →ₛ E` are dense in L^∞ --
 * `α →ₛ β` (local notation): the type of simple functions `α → β`.
 * `α →₁ₛ[μ] E`: the type of `L1` simple functions `α → β`.
 -/
+
+@[expose] public section
 
 
 noncomputable section
@@ -133,7 +137,7 @@ theorem memLp_approxOn [BorelSpace E] {f : β → E} {μ : Measure β} (fmeas : 
   have hf' : MemLp (fun x => ‖f x - y₀‖) p μ := by
     have h_meas : Measurable fun x => ‖f x - y₀‖ := by
       simp only [← dist_eq_norm]
-      exact (continuous_id.dist continuous_const).measurable.comp fmeas
+      fun_prop
     refine ⟨h_meas.aemeasurable.aestronglyMeasurable, ?_⟩
     rw [eLpNorm_norm]
     convert eLpNorm_add_lt_top hf hi₀.neg with x
@@ -506,7 +510,7 @@ def toSimpleFunc (f : Lp.simpleFunc E p μ) : α →ₛ E :=
   Classical.choose f.2
 
 /-- `(toSimpleFunc f)` is measurable. -/
-@[measurability]
+@[fun_prop]
 protected theorem measurable [MeasurableSpace E] (f : Lp.simpleFunc E p μ) :
     Measurable (toSimpleFunc f) :=
   (toSimpleFunc f).measurable
@@ -515,7 +519,7 @@ protected theorem stronglyMeasurable (f : Lp.simpleFunc E p μ) :
     StronglyMeasurable (toSimpleFunc f) :=
   (toSimpleFunc f).stronglyMeasurable
 
-@[measurability]
+@[fun_prop]
 protected theorem aemeasurable [MeasurableSpace E] (f : Lp.simpleFunc E p μ) :
     AEMeasurable (toSimpleFunc f) μ :=
   (simpleFunc.measurable f).aemeasurable
@@ -691,8 +695,6 @@ def coeToLp : Lp.simpleFunc E p μ →L[𝕜] Lp E p μ :=
     map_smul' := fun _ _ => rfl
     cont := Lp.simpleFunc.uniformContinuous.continuous }
 
-variable {α E 𝕜}
-
 end CoeToLp
 
 section Order
@@ -785,8 +787,6 @@ theorem denseRange_coeSimpleFuncNonnegToLpNonneg [hp : Fact (1 ≤ p)] (hp_ne_to
     exact h_toLp n
   · rfl
 
-variable {p μ G}
-
 end Order
 
 end simpleFunc
@@ -867,7 +867,7 @@ theorem MemLp.induction_dense (hp_ne_top : p ≠ ∞) (P : (α → E) → Prop)
   rcases eq_or_ne p 0 with (rfl | hp_pos)
   · rcases h0P (0 : E) MeasurableSet.empty (by simp only [measure_empty, zero_lt_top])
         hε with ⟨g, _, Pg⟩
-    exact ⟨g, by simp only [eLpNorm_exponent_zero, zero_le'], Pg⟩
+    exact ⟨g, by simp, Pg⟩
   suffices H : ∀ (f' : α →ₛ E) (δ : ℝ≥0∞) (hδ : δ ≠ 0), MemLp f' p μ →
       ∃ g, eLpNorm (⇑f' - g) p μ ≤ δ ∧ P g by
     obtain ⟨η, ηpos, hη⟩ := exists_Lp_half E μ p hε
