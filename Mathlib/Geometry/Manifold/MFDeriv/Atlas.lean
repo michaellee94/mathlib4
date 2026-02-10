@@ -379,4 +379,42 @@ theorem TangentBundle.symmL_trivializationAt
     simpa using mdifferentiableWithinAt_extChartAt_symm (by simp [hx])
   simp [hx, mfderivWithin, this]
 
+omit [IsManifold I 1 M] in
+/-- The `fderivWithin` of the round-trip composition `(extChartAt I x) ∘ (extChartAt I x).symm`
+at the chart point in `range I` equals the identity. -/
+lemma _root_.fderivWithin_extChartAt_comp_extChartAt_symm_range :
+    fderivWithin 𝕜 ((extChartAt I x) ∘ (extChartAt I x).symm) (range I) (extChartAt I x x) =
+      ContinuousLinearMap.id 𝕜 _ := by
+  set φ := extChartAt I x
+  have eq_nhd : ((extChartAt I x) ∘ (extChartAt I x).symm) =ᶠ[𝓝[range I] (extChartAt I x x)] id :=
+    Filter.eventuallyEq_of_mem (extChartAt_target_mem_nhdsWithin x)
+      (fun _ ↦ (extChartAt I x).right_inv)
+  rw [eq_nhd.fderivWithin_eq (by simp)]
+  exact fderivWithin_id <| I.uniqueDiffOn.uniqueDiffWithinAt (mem_range_self _)
+
+/-- The manifold derivative of `extChartAt` at the basepoint is the identity. -/
+lemma _root_.mfderiv_extChartAt_self :
+    mfderiv I 𝓘(𝕜, E) (extChartAt I x) x = ContinuousLinearMap.id 𝕜 _ := by
+  rw [← TangentBundle.continuousLinearMapAt_trivializationAt (by simp)]
+  rw [TangentBundle.continuousLinearMapAt_trivializationAt_eq_core (by simp)]
+  ext v
+  simpa using (tangentBundleCore I M).coordChange_self (achart H x) x (mem_chart_source H x) v
+
+/-- The manifold derivative within `range I` of `(extChartAt I x).symm` at the chart point is
+the identity. -/
+lemma _root_.mfderivWithin_range_extChartAt_symm :
+    mfderivWithin 𝓘(𝕜, E) I (extChartAt I x).symm (range I) (extChartAt I x x) =
+      ContinuousLinearMap.id 𝕜 _ := by
+  have hcomp := mfderivWithin_extChartAt_symm_comp_mfderiv_extChartAt' (I := I)
+    (mem_extChartAt_source x)
+  rw [mfderiv_extChartAt_self (I := I) (x := x), ContinuousLinearMap.comp_id] at hcomp
+  simpa using hcomp
+
+/-- The inverse of the derivative of `(extChartAt I x).symm` at the chart point,
+applied to a tangent vector, gives back the tangent vector. -/
+lemma _root_.mfderivWithin_extChartAt_symm_inverse_apply (v : TangentSpace I x) :
+    (mfderivWithin 𝓘(𝕜, E) I (extChartAt I x).symm (range I) (extChartAt I x x)).inverse v = v := by
+  rw [mfderivWithin_range_extChartAt_symm, ContinuousLinearMap.inverse_id]
+  exact ContinuousLinearMap.id_apply ..
+
 end extChartAt
