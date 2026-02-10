@@ -407,7 +407,7 @@ lemma mfderivWithin_range_extChartAt_symm :
       ContinuousLinearMap.id 𝕜 _ := by
   have hcomp := mfderivWithin_extChartAt_symm_comp_mfderiv_extChartAt' (I := I)
     (mem_extChartAt_source x)
-  rw [mfderiv_extChartAt_self (I := I) (x := x), ContinuousLinearMap.comp_id] at hcomp
+  rw [mfderiv_extChartAt_self, ContinuousLinearMap.comp_id] at hcomp
   simpa using hcomp
 
 /-- The inverse of the derivative of `(extChartAt I x).symm` at the chart point,
