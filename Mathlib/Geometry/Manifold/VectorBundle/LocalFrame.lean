@@ -4,7 +4,6 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Patrick Massot, Michael Rothgang
 -/
 module
-import Mathlib.Tactic.ByCases
 
 public import Mathlib.Geometry.Manifold.Algebra.Monoid
 public import Mathlib.Geometry.Manifold.Notation
@@ -69,8 +68,8 @@ the model fiber `F`.
 * `e.localFrame b`: the local frame on `V` induced by `e` and `b`.
   Use `e.localFrame b i` to access the i-th section in that frame.
 * `e.contMDiffOn_localFrame_baseSet`: each section `e.localFrame b i` is smooth on `e.baseSet`
-* `e.localFrame_coeff b i` describes the `i`-th coefficient of sections of `V` w.r.t. `e.localFrame b`:
-  `e.localFrame b i` is a linear map from sections of `V` to functions `M → 𝕜`.
+* `e.localFrame_coeff b i` describes the `i`-th coefficient of sections of `V` w.r.t.
+  `e.localFrame b`: `e.localFrame b i` is a linear map from sections of `V` to functions `M → 𝕜`.
 * `e.eventually_eq_localFrame_sum_coeff_smul b`: near `x`, we have
   `s = ∑ i, (e.localFrame_coeff b i s) • e.localFrame b i`
 * `e.localFrame_coeff_congr b`: the coefficient `e.localFrame_coeff b i` of `s` in the local frame
@@ -191,39 +190,45 @@ alias fintype_of_finiteDimensional := fintypeOfFiniteDimensional
 open scoped Classical in
 /-- Coefficients of a section `s` of `V` w.r.t. a local frame `{s i}` on `u`.
 Outside of `u`, this returns the junk value 0. -/
-def coeff (hs : IsLocalFrameOn I F n s u) (i : ι) : Π x : M, (V x →ₗ[𝕜] 𝕜) := fun x ↦
-  if hx : x ∈ u then (hs.toBasisAt hx).coord i else 0
+def coeff (hs : IsLocalFrameOn I F n s u) (i : ι) : (Π x : M, V x) →ₗ[𝕜] M → 𝕜 where
+  toFun s x := if hx : x ∈ u then (hs.toBasisAt hx).repr (s x) i else 0
+  map_add' s s' := by
+    ext x
+    by_cases hx : x ∈ u <;> simp [hx]
+  map_smul' c s := by
+    ext x
+    by_cases hx : x ∈ u <;> simp [hx]
 
 variable {x : M}
 
 @[simp]
 lemma coeff_apply_of_notMem (hs : IsLocalFrameOn I F n s u) (hx : x ∉ u) (t : Π x : M, V x)
-    (i : ι) : hs.coeff i x (t x) = 0 := by
+    (i : ι) : hs.coeff i t x = 0 := by
   simp [coeff, hx]
 
 @[simp]
 lemma coeff_apply_of_mem (hs : IsLocalFrameOn I F n s u) (hx : x ∈ u) (t : Π x : M, V x) (i : ι) :
-    hs.coeff i x (t x) = (hs.toBasisAt hx).repr (t x) i := by
+    hs.coeff i t x = (hs.toBasisAt hx).repr (t x) i := by
   simp [coeff, hx]
 
 -- TODO: add uniqueness of the decomposition; follows from the IsBasis property in the definition
 
 lemma coeff_sum_eq [Fintype ι] (hs : IsLocalFrameOn I F n s u) (t : Π x : M, V x) (hx : x ∈ u) :
-    t x = ∑ i, (hs.coeff i x (t x)) • (s i x) := by
+    t x = ∑ i, (hs.coeff i t x) • (s i x) := by
   simpa [coeff, hx] using (Basis.sum_repr (hs.toBasisAt hx) (t x)).symm
 
 /-- A local frame locally spans the space of sections for `V`: for each local frame `s i` on an open
 set `u` around `x`, we have `t = ∑ i, (hs.coeff i t) • (s i x)` near `x`. -/
 lemma eventually_eq_sum_coeff_smul [Fintype ι]
-    (hs : IsLocalFrameOn I F n s u) (t : Π x : M,  V x) (hu'' : u ∈ 𝓝 x) :
-    ∀ᶠ x' in 𝓝 x, t x' = ∑ i, (hs.coeff i x' (t x')) • (s i x') :=
+    (hs : IsLocalFrameOn I F n s u) (t : Π x : M, V x) (hu'' : u ∈ 𝓝 x) :
+    ∀ᶠ x' in 𝓝 x, t x' = ∑ i, (hs.coeff i t x') • (s i x') :=
   eventually_of_mem hu'' fun _ hx ↦ hs.coeff_sum_eq _ hx
 
 variable {t t' : Π x : M, V x}
 
 /-- The coefficients of `t` in a local frame at `x` only depend on `t` at `x`. -/
 lemma coeff_congr (hs : IsLocalFrameOn I F n s u) (htt' : t x = t' x) (i : ι) :
-    hs.coeff i x (t x) = hs.coeff i x (t' x) := by
+    hs.coeff i t x = hs.coeff i t' x := by
   by_cases hxe : x ∈ u
   · simp [coeff, hxe]
     congr
@@ -233,7 +238,7 @@ lemma coeff_congr (hs : IsLocalFrameOn I F n s u) (htt' : t x = t' x) (i : ι) :
 a section `t` has equal frame coefficients in them. -/
 lemma coeff_eq_of_eq (hs : IsLocalFrameOn I F n s u) (hs' : IsLocalFrameOn I F n s' u)
     (hss' : ∀ i, s i x = s' i x) {t : Π x : M, V x} (i : ι) :
-    hs.coeff i x (t x) = hs'.coeff i x (t x) := by
+    hs.coeff i t x = hs'.coeff i t x := by
   by_cases hxe : x ∈ u
   · simp [coeff, hxe]
     simp_all [toBasisAt]
@@ -243,14 +248,13 @@ lemma coeff_eq_of_eq (hs : IsLocalFrameOn I F n s u) (hs' : IsLocalFrameOn I F n
 frame at `x` agree. -/
 lemma eq_iff_coeff [VectorBundle 𝕜 F V] [FiniteDimensional 𝕜 F]
     (hs : IsLocalFrameOn I F n s u) (hx : x ∈ u) :
-    t x = t' x ↔ ∀ i, hs.coeff i x (t x) = hs.coeff i x (t' x) := by
-  have := fintype_of_finiteDimensional hs hx
+    t x = t' x ↔ ∀ i, hs.coeff i t x = hs.coeff i t' x := by
+  have := fintypeOfFiniteDimensional hs hx
   exact ⟨fun h i ↦ hs.coeff_congr h i, fun h ↦ by
-    sorry--simp [h, hs.coeff_sum_eq x (t hx), hs.coeff_sum_eq x (t' hx)]⟩
-    ⟩
+    simp +contextual [h, hs.coeff_sum_eq t hx, hs.coeff_sum_eq t' hx]⟩
 
 lemma coeff_apply_zero_at (hs : IsLocalFrameOn I F n s u) (ht : t x = 0) (i : ι) :
-    hs.coeff i x (t x) = 0 := by
+    hs.coeff i t x = 0 := by
   simp [hs.coeff_congr (t' := 0) ht]
 
 variable (hs : IsLocalFrameOn I F n s u) [VectorBundle 𝕜 F V]
@@ -379,7 +383,7 @@ lemma _root_.contMDiffAt_localFrame_of_mem (i : ι) (hx : x ∈ e.baseSet) :
 
 variable [ContMDiffVectorBundle 1 F V I]
 
---#check LinearMap.foo
+-- use this! #check LinearMap.foo
 
 variable (I) in
 /-- Coefficients of a section `s` of `V` w.r.t. the local frame `b.localFrame e i`.
@@ -471,7 +475,6 @@ lemma contMDiffAt_localFrame_coeff (hxe : x ∈ e.baseSet) (hs : CMDiffAt k (T% 
     intro y hy
     simp [aux, e.localFrame_coeff_eq_coeff hy]
   simp only [aux]
-
   -- step 2: `s` read in trivialization `e` is `C^k`
   have h₁ : CMDiffAt k (fun x ↦ (e (s x)).2) x := e.contMDiffAt_section_iff hxe |>.1 hs
   -- step 3: `b.repr` is a linear map, so the composition is smooth
@@ -541,7 +544,6 @@ lemma mdifferentiableAt_localFrame_coeff
     intro y hy
     simp [aux, e.localFrame_coeff_eq_coeff hy]
   simp only [aux]
-
   -- step 2: `s` read in trivialization `e` is differentiable
   have h₁ : MDiffAt (fun x ↦ (e (s x)).2) x := e.mdifferentiableAt_section_iff I s hxe |>.1 hs
   -- step 3: `b.repr` is a linear map, so the composition is smooth
