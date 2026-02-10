@@ -190,20 +190,14 @@ alias fintype_of_finiteDimensional := fintypeOfFiniteDimensional
 open scoped Classical in
 /-- Coefficients of a section `s` of `V` w.r.t. a local frame `{s i}` on `u`.
 Outside of `u`, this returns the junk value 0. -/
-def coeff (hs : IsLocalFrameOn I F n s u) (i : ι) : (Π x : M, V x) →ₗ[𝕜] M → 𝕜 where
-  toFun s x := if hx : x ∈ u then (hs.toBasisAt hx).repr (s x) i else 0
-  map_add' s s' := by
-    ext x
-    by_cases hx : x ∈ u <;> simp [hx]
-  map_smul' c s := by
-    ext x
-    by_cases hx : x ∈ u <;> simp [hx]
+def coeff (hs : IsLocalFrameOn I F n s u) (i : ι) : Π x : M, (V x →ₗ[𝕜] 𝕜) := fun x ↦
+  if hx : x ∈ u then (hs.toBasisAt hx).coord i else 0
 
 variable {x : M}
 
 @[simp]
-lemma coeff_apply_of_notMem (hs : IsLocalFrameOn I F n s u) (hx : x ∉ u) (t : Π x : M, V x)
-    (i : ι) : hs.coeff i t x = 0 := by
+lemma coeff_apply_of_notMem (hs : IsLocalFrameOn I F n s u) (hx : x ∉ u) (i : ι) :
+    hs.coeff i x = 0 := by
   simp [coeff, hx]
 
 @[simp]
