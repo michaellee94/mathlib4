@@ -328,8 +328,8 @@ lemma gramSchmidt_continuousWithinAt (hs : ∀ i, ContinuousWithinAt (T% (s i)) 
     simp_all only [Subtype.mk.injEq, aux]
   exact ContinuousWithinAt.starProjection (gramSchmidt_continuousWithinAt hs this) (hs i)
     (VectorBundle.gramSchmidt_ne_zero_coe _ this)
-termination_by i
-decreasing_by exact (LocallyFiniteOrderBot.finset_mem_Iio i i').mp hi'
+  termination_by i
+  decreasing_by exact (LocallyFiniteOrderBot.finset_mem_Iio i i').mp hi'
 
 lemma gramSchmidt_continuousAt (hs : ∀ i, ContinuousAt (T% (s i)) x)
     (hs' : LinearIndependent ℝ ((s · x) ∘ ((↑) : Set.Iic i → ι))) :
