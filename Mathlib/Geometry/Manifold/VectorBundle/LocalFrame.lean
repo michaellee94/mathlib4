@@ -229,9 +229,7 @@ variable {t t' : Π x : M, V x}
 /-- The coefficients of `t` in a local frame at `x` only depend on `t` at `x`. -/
 lemma coeff_congr (hs : IsLocalFrameOn I F n s u) (htt' : t x = t' x) (i : ι) :
     (LinearMap.piApply (hs.coeff i)) t x = (LinearMap.piApply (hs.coeff i)) t' x := by
-  by_cases hxe : x ∈ u
-  · simp [LinearMap.piApply, coeff, hxe, htt']
-  · simp [LinearMap.piApply, coeff, hxe]
+  by_cases hxe : x ∈ u <;> simp [LinearMap.piApply, coeff, hxe, htt']
 
 /-- If `s` and `s'` are local frames which are equal at `x`,
 a section `t` has equal frame coefficients in them. -/
@@ -451,7 +449,7 @@ Then the coefficient of `s` w.r.t. the local frame induced by `b` and `e`
 equals the cofficient of "`s x` read in the trivialisation `e`" for `b i`. -/
 lemma localFrame_coeff_eq_coeff (hxe : x ∈ e.baseSet) {i : ι} :
     (LinearMap.piApply (e.localFrame_coeff I b i)) s x =
-      b.repr (e (TotalSpace.mk' F x (s x))).2 i := by
+      b.repr (e ((T% s) x)).2 i := by
   simp [e.localFrame_coeff_apply_of_mem_baseSet b hxe, basisAt]
 
 end Trivialization
@@ -475,7 +473,7 @@ lemma contMDiffAt_localFrame_coeff (hxe : x ∈ e.baseSet) (hs : CMDiffAt k (T% 
   -- This boils down to computing the frame coefficients in a local trivialisation.
   classical
   -- step 1: on e.baseSet, can compute the coefficient very well
-  let aux := fun x ↦ b.repr (e (TotalSpace.mk' F x (s x))).2 i
+  let aux := fun x ↦ b.repr (e ((T% s) x)).2 i
   -- Since e.baseSet is open, this is sufficient.
   suffices CMDiffAt k aux x by
     apply this.congr_of_eventuallyEq ?_
@@ -484,7 +482,7 @@ lemma contMDiffAt_localFrame_coeff (hxe : x ∈ e.baseSet) (hs : CMDiffAt k (T% 
     simp [aux, e.localFrame_coeff_eq_coeff hy]
   simp only [aux]
   -- step 2: `s` read in trivialization `e` is `C^k`
-  have h₁ : CMDiffAt k (fun x ↦ (e (TotalSpace.mk' F x (s x))).2) x := by
+  have h₁ : CMDiffAt k (fun x ↦ (e ((T% s) x)).2) x := by
     simpa using (e.contMDiffAt_section_iff hxe).1 hs
   -- step 3: `b.repr` is a linear map, so the composition is smooth
   let bas := fun v ↦ b.repr v i
@@ -495,7 +493,7 @@ lemma contMDiffAt_localFrame_coeff (hxe : x ∈ e.baseSet) (hs : CMDiffAt k (T% 
   let basL : F →L[𝕜] 𝕜 :=
     { toLinearMap := basl
       cont := basl.continuous_of_finiteDimensional }
-  have hbas : ContMDiffAt 𝓘(𝕜, F) 𝓘(𝕜) k basL (e (TotalSpace.mk' F x (s x))).2 :=
+  have hbas : ContMDiffAt 𝓘(𝕜, F) 𝓘(𝕜) k basL (e ((T% s) x)).2 :=
     contMDiffAt_iff_contDiffAt.mpr <| basL.contDiff.contDiffAt
   exact hbas.comp x h₁
 
@@ -547,7 +545,7 @@ lemma mdifferentiableAt_localFrame_coeff
   -- This boils down to computing the frame coefficients in a local trivialisation.
   classical
   -- step 1: on e.baseSet, can compute the coefficient very well
-  let aux := fun x ↦ b.repr (e (TotalSpace.mk' F x (s x))).2 i
+  let aux := fun x ↦ b.repr (e ((T% s) x)).2 i
   -- Since e.baseSet is open, this is sufficient.
   suffices MDiffAt aux x by
     apply this.congr_of_eventuallyEq
@@ -556,7 +554,7 @@ lemma mdifferentiableAt_localFrame_coeff
     simp [aux, e.localFrame_coeff_eq_coeff hy]
   simp only [aux]
   -- step 2: `s` read in trivialization `e` is differentiable
-  have h₁ : MDiffAt (fun x ↦ (e (TotalSpace.mk' F x (s x))).2) x := by
+  have h₁ : MDiffAt (fun x ↦ (e ((T% s) x)).2) x := by
     simpa using (e.mdifferentiableAt_section_iff I s hxe).1 hs
   -- step 3: `b.repr` is a linear map, so the composition is smooth
   let bas := fun v ↦ b.repr v i
@@ -567,7 +565,7 @@ lemma mdifferentiableAt_localFrame_coeff
   let basL : F →L[𝕜] 𝕜 :=
     { toLinearMap := basl
       cont := basl.continuous_of_finiteDimensional }
-  have hbas : MDifferentiableAt 𝓘(𝕜, F) 𝓘(𝕜) basL (e (TotalSpace.mk' F x (s x))).2 :=
+  have hbas : MDifferentiableAt 𝓘(𝕜, F) 𝓘(𝕜) basL (e ((T% s) x)).2 :=
     mdifferentiableAt_iff_differentiableAt.mpr (basL.differentiable _)
   exact hbas.comp x h₁
 
