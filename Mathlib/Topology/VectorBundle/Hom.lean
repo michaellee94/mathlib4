@@ -533,3 +533,170 @@ theorem inCoordinates_apply_eq₂
 end TwoVariables
 
 end
+
+section Operations
+
+variable {𝕜 : Type*} [NontriviallyNormedField 𝕜]
+  {M : Type*} [TopologicalSpace M]
+  {F : Type*} [NormedAddCommGroup F] [NormedSpace 𝕜 F]
+  {V : M → Type*} [TopologicalSpace (TotalSpace F V)]
+  [∀ x, TopologicalSpace (V x)] [FiberBundle F V]
+
+variable {f : M → 𝕜} {a : 𝕜} {s t : Π x : M, V x} {u : Set M} {x₀ : M}
+
+local notation "T% " s => (fun x ↦ TotalSpace.mk' F x (s x))
+
+lemma continuousWithinAt_section : ContinuousWithinAt (T% s) u x₀ ↔
+    ContinuousWithinAt (fun x ↦ (trivializationAt F V x₀ ⟨x, s x⟩).2) u x₀ := by
+  rw [FiberBundle.continuousWithinAt_totalSpace]
+  simpa using (and_iff_right continuousWithinAt_id)
+
+variable [∀ x, AddCommGroup (V x)] [∀ x, Module 𝕜 (V x)] [VectorBundle 𝕜 F V]
+
+include 𝕜
+
+lemma ContinuousWithinAt.add_section (hs : ContinuousWithinAt (T% s) u x₀)
+    (ht : ContinuousWithinAt (T% t) u x₀) : ContinuousWithinAt (T% (s + t)) u x₀ := by
+  rw [continuousWithinAt_section] at hs ht ⊢
+  set e := trivializationAt F V x₀
+  refine (hs.add ht).congr_of_eventuallyEq ?_ ?_
+  · filter_upwards [mem_nhdsWithin_of_mem_nhds
+      (e.open_baseSet.mem_nhds (mem_baseSet_trivializationAt F V x₀))] with x hx
+    apply (e.linear 𝕜 hx).1
+  · apply (e.linear 𝕜 (FiberBundle.mem_baseSet_trivializationAt' x₀)).1
+
+lemma ContinuousAt.add_section (hs : ContinuousAt (T% s) x₀) (ht : ContinuousAt (T% t) x₀) :
+    ContinuousAt (T% (s + t)) x₀ := by
+  rw [← continuousWithinAt_univ] at hs ht ⊢
+  exact hs.add_section (𝕜 := 𝕜) ht
+
+lemma ContinuousOn.add_section (hs : ContinuousOn (T% s) u) (ht : ContinuousOn (T% t) u) :
+    ContinuousOn (T% (s + t)) u :=
+  fun x₀ hx₀ ↦ (hs x₀ hx₀).add_section (𝕜 := 𝕜) (ht x₀ hx₀)
+
+lemma Continuous.add_section (hs : Continuous (T% s)) (ht : Continuous (T% t)) :
+    Continuous (T% (s + t)) := by
+  simp_rw [continuous_iff_continuousAt] at hs ht ⊢
+  exact fun x₀ ↦ (hs x₀).add_section (𝕜 := 𝕜) (ht x₀)
+
+lemma ContinuousWithinAt.neg_section (hs : ContinuousWithinAt (T% s) u x₀) :
+    ContinuousWithinAt (T% (-s)) u x₀ := by
+  rw [continuousWithinAt_section] at hs ⊢
+  set e := trivializationAt F V x₀
+  refine hs.neg.congr_of_eventuallyEq ?_ ?_
+  · filter_upwards [mem_nhdsWithin_of_mem_nhds
+      (e.open_baseSet.mem_nhds (mem_baseSet_trivializationAt F V x₀))] with x hx
+    apply (e.linear 𝕜 hx).map_neg
+  · apply (e.linear 𝕜 (FiberBundle.mem_baseSet_trivializationAt' x₀)).map_neg
+
+lemma ContinuousAt.neg_section (hs : ContinuousAt (T% s) x₀) : ContinuousAt (T% (-s)) x₀ := by
+  rw [← continuousWithinAt_univ] at hs ⊢
+  exact ContinuousWithinAt.neg_section (𝕜 := 𝕜) hs
+
+lemma ContinuousOn.neg_section (hs : ContinuousOn (T% s) u) : ContinuousOn (T% (-s)) u :=
+  fun x₀ hx₀ ↦ (hs x₀ hx₀).neg_section (𝕜 := 𝕜)
+
+lemma Continuous.neg_section (hs : Continuous (T% s)) : Continuous (T% (-s)) := by
+  simp_rw [continuous_iff_continuousAt] at hs ⊢
+  exact fun x₀ ↦ (hs x₀).neg_section (𝕜 := 𝕜)
+
+lemma ContinuousWithinAt.sub_section (hs : ContinuousWithinAt (T% s) u x₀)
+    (ht : ContinuousWithinAt (T% t) u x₀) : ContinuousWithinAt (T% (s - t)) u x₀ := by
+  rw [sub_eq_add_neg]
+  exact hs.add_section (𝕜 := 𝕜) (ht.neg_section (𝕜 := 𝕜))
+
+lemma ContinuousAt.sub_section (hs : ContinuousAt (T% s) x₀) (ht : ContinuousAt (T% t) x₀) :
+    ContinuousAt (T% (s - t)) x₀ := by
+  rw [sub_eq_add_neg]
+  exact hs.add_section (𝕜 := 𝕜) (ht.neg_section (𝕜 := 𝕜))
+
+lemma ContinuousOn.sub_section (hs : ContinuousOn (T% s) u) (ht : ContinuousOn (T% t) u) :
+    ContinuousOn (T% (s - t)) u :=
+  fun x₀ hx₀ ↦ (hs x₀ hx₀).sub_section (𝕜 := 𝕜) (ht x₀ hx₀)
+
+lemma Continuous.sub_section (hs : Continuous (T% s)) (ht : Continuous (T% t)) :
+    Continuous (T% (s - t)) := by
+  simp_rw [continuous_iff_continuousAt] at hs ht ⊢
+  exact fun x₀ ↦ (hs x₀).sub_section (𝕜 := 𝕜) (ht x₀)
+
+lemma ContinuousWithinAt.smul_section (hf : ContinuousWithinAt f u x₀)
+    (hs : ContinuousWithinAt (T% s) u x₀) : ContinuousWithinAt (T% (fun x ↦ f x • s x)) u x₀ := by
+  rw [continuousWithinAt_section] at hs ⊢
+  set e := trivializationAt F V x₀
+  refine (hf.smul hs).congr_of_eventuallyEq ?_ ?_
+  · filter_upwards [mem_nhdsWithin_of_mem_nhds
+      (e.open_baseSet.mem_nhds (mem_baseSet_trivializationAt F V x₀))] with x hx
+    apply (e.linear 𝕜 hx).2
+  · apply (e.linear 𝕜 (FiberBundle.mem_baseSet_trivializationAt' x₀)).2
+
+lemma ContinuousAt.smul_section (hf : ContinuousAt f x₀) (hs : ContinuousAt (T% s) x₀) :
+    ContinuousAt (T% (fun x ↦ f x • s x)) x₀ := by
+  rw [← continuousWithinAt_univ] at hf hs ⊢
+  exact hf.smul_section hs
+
+lemma ContinuousOn.smul_section (hf : ContinuousOn f u) (hs : ContinuousOn (T% s) u) :
+    ContinuousOn (T% (fun x ↦ f x • s x)) u :=
+  fun x₀ hx₀ ↦ (hf x₀ hx₀).smul_section (hs x₀ hx₀)
+
+lemma Continuous.smul_section (hf : Continuous f) (hs : Continuous (T% s)) :
+    Continuous (T% (fun x ↦ f x • s x)) := by
+  simp_rw [continuous_iff_continuousAt] at hf hs ⊢
+  exact fun x₀ ↦ (hf x₀).smul_section (hs x₀)
+
+lemma ContinuousWithinAt.const_smul_section (hs : ContinuousWithinAt (T% s) u x₀) :
+    ContinuousWithinAt (T% (a • s)) u x₀ :=
+  continuousWithinAt_const.smul_section hs
+
+lemma ContinuousAt.const_smul_section (hs : ContinuousAt (T% s) x₀) :
+    ContinuousAt (T% (a • s)) x₀ :=
+  continuousAt_const.smul_section hs
+
+lemma ContinuousOn.const_smul_section (hs : ContinuousOn (T% s) u) : ContinuousOn (T% (a • s)) u :=
+  continuousOn_const.smul_section hs
+
+lemma Continuous.const_smul_section (hs : Continuous (T% s)) : Continuous (T% (a • s)) := by
+  simp_rw [continuous_iff_continuousAt] at hs ⊢
+  exact fun x₀ ↦ (hs x₀).const_smul_section
+
+variable {ι : Type*} {t' : ι → (x : M) → V x}
+
+lemma continuousWithinAt_zero_section : ContinuousWithinAt (T% (0 : Π x, V x)) u x₀ := by
+  rw [continuousWithinAt_section]
+  have hconst : ContinuousWithinAt (fun _ : M ↦ (0 : F)) u x₀ := continuousWithinAt_const
+  refine hconst.congr_of_eventuallyEq ?_ ?_
+  · filter_upwards [mem_nhdsWithin_of_mem_nhds ((trivializationAt F V x₀).open_baseSet.mem_nhds
+      (mem_baseSet_trivializationAt F V x₀))] with x hx
+    exact congrArg Prod.snd <| (trivializationAt F V x₀).zeroSection 𝕜 hx
+  · exact congrArg Prod.snd <|
+      (trivializationAt F V x₀).zeroSection 𝕜 (mem_baseSet_trivializationAt F V x₀)
+
+lemma ContinuousWithinAt.sum_section {s : Finset ι}
+    (hs : ∀ i ∈ s, ContinuousWithinAt (T% (t' i)) u x₀) :
+    ContinuousWithinAt (T% (fun x ↦ ∑ i ∈ s, (t' i x))) u x₀ := by
+  classical
+  induction s using Finset.induction_on with
+  | empty =>
+    simpa only [Finset.sum_empty] using continuousWithinAt_zero_section (𝕜 := 𝕜)
+  | insert i s hi h =>
+    simp only [Finset.sum_insert hi]
+    exact (hs i (s.mem_insert_self i)).add_section (𝕜 := 𝕜)
+      (h (fun i hi ↦ hs i (s.mem_insert_of_mem hi)))
+
+lemma ContinuousAt.sum_section {s : Finset ι} (hs : ∀ i ∈ s, ContinuousAt (T% (t' i)) x₀) :
+    ContinuousAt (T% (fun x ↦ ∑ i ∈ s, (t' i x))) x₀ := by
+  have hs' : ∀ i ∈ s, ContinuousWithinAt (T% (t' i)) univ x₀ := by
+    intro i hi
+    simpa [← continuousWithinAt_univ] using hs i hi
+  simpa [← continuousWithinAt_univ] using (ContinuousWithinAt.sum_section (𝕜 := 𝕜) hs')
+
+lemma ContinuousOn.sum_section {s : Finset ι} (hs : ∀ i ∈ s, ContinuousOn (T% (t' i)) u) :
+    ContinuousOn (T% (fun x ↦ ∑ i ∈ s, (t' i x))) u :=
+  fun x₀ hx₀ ↦ ContinuousWithinAt.sum_section (𝕜 := 𝕜) (fun i hi ↦ hs i hi x₀ hx₀)
+
+lemma Continuous.sum_section {s : Finset ι} (hs : ∀ i ∈ s, Continuous (T% (t' i))) :
+    Continuous (T% (fun x ↦ ∑ i ∈ s, (t' i x))) := by
+  simp_rw [continuous_iff_continuousAt] at hs ⊢
+  intro x₀
+  exact ContinuousAt.sum_section (𝕜 := 𝕜) (fun i hi ↦ hs i hi x₀)
+
+end Operations

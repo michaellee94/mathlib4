@@ -70,6 +70,12 @@ lemma IsContMDiffRiemannianBundle.of_le [h : IsContMDiffRiemannianBundle IB n F 
   rcases h.exists_contMDiff with ⟨g, g_smooth, hg⟩
   exact ⟨g, g_smooth.of_le h', hg⟩
 
+/-- A smooth Riemannian bundle is in particular a continuous Riemannian bundle. -/
+lemma IsContMDiffRiemannianBundle.toIsContinuousRiemannianBundle
+    [h : IsContMDiffRiemannianBundle IB n F E] : IsContinuousRiemannianBundle F E := by
+  rcases h.exists_contMDiff with ⟨g, hg, hinner⟩
+  exact ⟨⟨g, hg.continuous, hinner⟩⟩
+
 instance {a : WithTop ℕ∞} [IsContMDiffRiemannianBundle IB ∞ F E] [h : LEInfty a] :
     IsContMDiffRiemannianBundle IB a F E :=
   IsContMDiffRiemannianBundle.of_le h.out

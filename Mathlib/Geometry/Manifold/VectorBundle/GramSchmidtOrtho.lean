@@ -271,14 +271,11 @@ end VectorBundle
 /-! The Gram-Schmidt process preserves continuity of sections -/
 section continuity
 
--- TODO: need continuity analogues of ContMDiff.{smul_section,sub_section}
-
 section helper
 
 variable {s t : (x : B) → E x} {u : Set B} {x : B}
 
--- TODO: give a much better name!
-lemma continuousWithinAt_aux
+lemma continuousWithinAt_inner_div_norm_sq
     (hs : ContinuousWithinAt (T% s) u x) (ht : ContinuousWithinAt (T% t) u x) (hs' : s x ≠ 0) :
     ContinuousWithinAt (fun x ↦ ⟪s x, t x⟫ / (‖s x‖ ^ 2)) u x := by
   have := (hs.inner_bundle ht).smul ((hs.inner_bundle hs).inv₀ (inner_self_ne_zero.mpr hs'))
@@ -289,22 +286,21 @@ lemma continuousWithinAt_aux
   · congr
     rw [← real_inner_self_eq_norm_sq]
 
-lemma continuousAt_aux (hs : ContinuousAt (T% s) x) (ht : ContinuousAt (T% t) x) (hs' : s x ≠ 0) :
+lemma continuousAt_inner_div_norm_sq
+    (hs : ContinuousAt (T% s) x) (ht : ContinuousAt (T% t) x) (hs' : s x ≠ 0) :
     ContinuousAt (fun x ↦ ⟪s x, t x⟫ / (‖s x‖ ^ 2)) x := by
   rw [← continuousWithinAt_univ] at hs ht ⊢
-  exact continuousWithinAt_aux hs ht hs'
+  exact continuousWithinAt_inner_div_norm_sq hs ht hs'
 
 def ContinuousWithinAt.starProjection
     (hs : ContinuousWithinAt (T% s) u x) (ht : ContinuousWithinAt (T% t) u x) (hs' : s x ≠ 0) :
-    -- TODO: leaving out the type ascription yields a horrible error message, add test and fix!
-    letI S : (x : B) → E x := fun x ↦ (Submodule.span ℝ {s x}).orthogonalProjection (t x);
-    ContinuousWithinAt (T% S) u x := by
+    ContinuousWithinAt (T% fun x ↦ (Submodule.span ℝ {s x}).starProjection (t x)) u x := by
   simp [Submodule.starProjection_singleton]
-  sorry -- missing API! exact (continuousWithinAt_aux hs ht hs').smul_section hs
+  exact (continuousWithinAt_inner_div_norm_sq hs ht hs').smul_section hs
 
 lemma continuousWithinAt_inner (hs : ContinuousWithinAt (T% s) u x) :
     ContinuousWithinAt (‖s ·‖) u x := by
-  convert (Real.continuous_sqrt.continuousWithinAt).comp (hs.inner_bundle hs) (Set.mapsTo_image _ u)
+  convert (Real.continuous_sqrt.continuousWithinAt).comp (hs.inner_bundle hs) (u.mapsTo_image _)
   simp [← norm_eq_sqrt_real_inner]
 
 end helper
@@ -316,9 +312,13 @@ attribute [local instance] IsWellOrder.toHasWellFounded
 lemma gramSchmidt_continuousWithinAt (hs : ∀ i, ContinuousWithinAt (T% (s i)) u x)
     {i : ι} (hs' : LinearIndependent ℝ ((s · x) ∘ ((↑) : Set.Iic i → ι))) :
     ContinuousWithinAt (T% (VectorBundle.gramSchmidt s i)) u x := by
-  sorry /- simp_rw [VectorBundle.gramSchmidt_def]
-  apply (hs i).sub_section
-  apply ContMDiffWithinAt.sum_section
+  suffices ContinuousWithinAt (T% (fun x ↦ (s i x -
+      ∑ i_1 ∈ Iio i, (span ℝ {VectorBundle.gramSchmidt s i_1 x}).starProjection (s i x)))) u x by
+    apply ContinuousWithinAt.congr this
+    · simp_rw [VectorBundle.gramSchmidt_def s i]; intros; trivial
+    · rw [VectorBundle.gramSchmidt_def s i]
+  refine ContinuousWithinAt.sub_section (𝕜 := ℝ) (hs i) ?_
+  refine ContinuousWithinAt.sum_section (𝕜 := ℝ) ?_
   intro i' hi'
   let aux : { x // x ∈ Set.Iic i' } → { x // x ∈ Set.Iic i } :=
     fun ⟨x, hx⟩ ↦ ⟨x, hx.trans (Finset.mem_Iio.mp hi').le⟩
@@ -326,10 +326,10 @@ lemma gramSchmidt_continuousWithinAt (hs : ∀ i, ContinuousWithinAt (T% (s i)) 
     apply hs'.comp aux
     intro ⟨x, hx⟩ ⟨x', hx'⟩ h
     simp_all only [Subtype.mk.injEq, aux]
-  apply ContMDiffWithinAt.orthogonalProjection (gramSchmidt_contMDiffWithinAt hs this) (hs i)
-  apply VectorBundle.gramSchmidt_ne_zero_coe _ this -/
--- termination_by i
--- decreasing_by exact (LocallyFiniteOrderBot.finset_mem_Iio i i').mp hi'
+  exact ContinuousWithinAt.starProjection (gramSchmidt_continuousWithinAt hs this) (hs i)
+    (VectorBundle.gramSchmidt_ne_zero_coe _ this)
+termination_by i
+decreasing_by exact (LocallyFiniteOrderBot.finset_mem_Iio i i').mp hi'
 
 lemma gramSchmidt_continuousAt (hs : ∀ i, ContinuousAt (T% (s i)) x)
     (hs' : LinearIndependent ℝ ((s · x) ∘ ((↑) : Set.Iic i → ι))) :
@@ -353,12 +353,10 @@ lemma gramSchmidtNormed_continuousWithinAt (hs : ∀ i, ContinuousWithinAt (T% (
     ContinuousWithinAt (T% (VectorBundle.gramSchmidtNormed s i)) u x := by
   have : ContinuousWithinAt (T%
       (fun x ↦ ‖VectorBundle.gramSchmidt s i x‖⁻¹ • VectorBundle.gramSchmidt s i x)) u x := by
-    sorry
-  --   refine ContMDiffWithinAt.smul_section ?_ (gramSchmidt_contMDiffWithinAt hs hs')
-  --   refine ContMDiffWithinAt.inv₀ ?_ ?_
-  --   · refine contMDiffWithinAt_inner (gramSchmidt_contMDiffWithinAt hs hs') ?_
-  --     simpa using InnerProductSpace.gramSchmidt_ne_zero_coe i hs'
-  --   · simpa using InnerProductSpace.gramSchmidt_ne_zero_coe i hs'
+    refine ContinuousWithinAt.smul_section (𝕜 := ℝ) ?_
+      (gramSchmidt_continuousWithinAt hs hs')
+    refine (continuousWithinAt_inner (gramSchmidt_continuousWithinAt hs hs')).inv₀ ?_
+    simpa using InnerProductSpace.gramSchmidt_ne_zero_coe i hs'
   exact this.congr (fun y hy ↦ by congr) (by congr)
 
 lemma gramSchmidtNormed_continuousAt (hs : ∀ i, ContinuousAt (T% (s i)) x)
@@ -401,8 +399,7 @@ section helper
 
 variable {s t : (x : B) → E x} {u : Set B} {x : B}
 
--- TODO: give a much better name!
-lemma contMDiffWithinAt_aux
+lemma contMDiffWithinAt_inner_div_norm_sq
     (hs : CMDiffAt[u] n (T% s) x) (ht : CMDiffAt[u] n (T% t) x) (hs' : s x ≠ 0) :
     CMDiffAt[u] n (fun x ↦ ⟪s x, t x⟫ / (‖s x‖ ^ 2)) x := by
   have := (hs.inner_bundle ht).smul ((hs.inner_bundle hs).inv₀ (inner_self_ne_zero.mpr hs'))
@@ -413,18 +410,17 @@ lemma contMDiffWithinAt_aux
   · congr
     rw [← real_inner_self_eq_norm_sq]
 
-lemma contMDiffAt_aux (hs : CMDiffAt n (T% s) x) (ht : CMDiffAt n (T% t) x) (hs' : s x ≠ 0) :
+lemma contMDiffAt_inner_div_norm_sq
+    (hs : CMDiffAt n (T% s) x) (ht : CMDiffAt n (T% t) x) (hs' : s x ≠ 0) :
     CMDiffAt n (fun x ↦ ⟪s x, t x⟫ / (‖s x‖ ^ 2)) x := by
   rw [← contMDiffWithinAt_univ] at hs ht ⊢
-  exact contMDiffWithinAt_aux hs ht hs'
+  exact contMDiffWithinAt_inner_div_norm_sq hs ht hs'
 
 def ContMDiffWithinAt.starProjection
     (hs : CMDiffAt[u] n (T% s) x) (ht : CMDiffAt[u] n (T% t) x) (hs' : s x ≠ 0) :
-    -- TODO: leaving out the type ascription yields a horrible error message, add test and fix!
-    letI S : (x : B) → E x := fun x ↦ (Submodule.span ℝ {s x}).starProjection (t x);
-    CMDiffAt[u] n (T% S) x := by
+    CMDiffAt[u] n (T% fun x ↦ (Submodule.span ℝ {s x}).starProjection (t x)) x := by
   simp_rw [Submodule.starProjection_singleton]
-  exact (contMDiffWithinAt_aux hs ht hs').smul_section hs
+  exact (contMDiffWithinAt_inner_div_norm_sq hs ht hs').smul_section hs
 
 lemma contMDiffWithinAt_inner (hs : CMDiffAt[u] n (T% s) x) (hs' : s x ≠ 0) :
     CMDiffAt[u] n (‖s ·‖) x := by
