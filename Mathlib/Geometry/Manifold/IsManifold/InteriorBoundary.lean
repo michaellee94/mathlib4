@@ -302,6 +302,14 @@ protected lemma isOpen_interior {n : WithTop ℕ∞} [IsManifold I n M] (hn : n 
     isOpen_interior, mem_chart_source H x, isInteriorPoint_iff.1 hx⟩
   exact fun y hy ↦ (I.isInteriorPoint_iff_of_mem_atlas hn (chart_mem_atlas H x) hy.1).2 hy.2
 
+/-- The interior of a `Cⁿ` manifold, as an open subset. -/
+abbrev interiorOpens {n : WithTop ℕ∞} [IsManifold I n M] (hn : n ≠ 0) :
+    TopologicalSpace.Opens M := ⟨I.interior M, I.isOpen_interior hn⟩
+
+/-- The interior of a `Cⁿ` manifold is a `Cⁿ` manifold for `n ≠ 0`. -/
+instance {n : WithTop ℕ∞} [IsManifold I n M] (hn : n ≠ 0) :
+    IsManifold I n (I.interiorOpens (M := M) hn) := by infer_instance
+
 /-- The boundary of any C¹ manifold is closed.
 
 This is currently only proven for C¹ manifolds, but holds at least for finite-dimensional
