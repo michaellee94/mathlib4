@@ -7,6 +7,7 @@ module
 
 public import Mathlib.Analysis.Calculus.FDeriv.Comp
 public import Mathlib.Analysis.Calculus.FDeriv.Congr
+public import Mathlib.Analysis.InnerProductSpace.PiL2
 public import Mathlib.Geometry.Manifold.ContMDiff.Basic
 public import Mathlib.Geometry.Manifold.IsManifold.InteriorBoundary
 public import Mathlib.Geometry.Manifold.IsManifold.Basic
@@ -263,13 +264,13 @@ The field `isOrientable` records compatibility of the interior atlas with
 each interior tangent space. -/
 structure ManifoldOrientation (M : Type*) [TopologicalSpace M] [ChartedSpace H M]
     [IsManifold I 1 M] where
+  /-- Chosen orientation on each tangent space at interior points. -/
   tangentOrientation :
     ∀ x : I.interiorOpens (M := M) one_ne_zero,
       Orientation ℝ (TangentSpace I x) (Fin (Module.finrank ℝ E))
+  /-- Compatibility of the interior atlas with the orientation-preserving groupoid. -/
   isOrientable :
     HasGroupoid (I.interiorOpens (M := M) one_ne_zero) (orientationPreservingGroupoid I)
-
-attribute [instance] ManifoldOrientation.isOrientable
 
 /-- A manifold is `Orientable` if its atlas is compatible with the
 `orientationPreservingGroupoid` on its manifold interior. -/
@@ -281,18 +282,73 @@ class OrientedManifold (M : Type*) [TopologicalSpace M] [ChartedSpace H M] [IsMa
     where
   manifoldOrientation : ManifoldOrientation I M
 
-attribute [instance] OrientedManifold.manifoldOrientation
-
 /-- An oriented manifold is orientable. -/
 instance (M : Type*) [TopologicalSpace M] [ChartedSpace H M] [IsManifold I 1 M]
-    [OrientedManifold I M] : Orientable I M := OrientedManifold.manifoldOrientation.isOrientable
+    [OrientedManifold I M] : Orientable I M :=
+  (OrientedManifold.manifoldOrientation (I := I) (M := M)).isOrientable
 
 /-- The chosen orientation on tangent spaces at interior points of an oriented manifold. -/
 abbrev orientedTangentOrientation (M : Type*) [TopologicalSpace M] [ChartedSpace H M]
     [IsManifold I 1 M] [OrientedManifold I M]
     (x : I.interiorOpens (M := M) one_ne_zero) :
     Orientation ℝ (TangentSpace I x) (Fin (Module.finrank ℝ E)) :=
-  OrientedManifold.manifoldOrientation.tangentOrientation x
+  (OrientedManifold.manifoldOrientation (I := I) (M := M)).tangentOrientation x
+
+/-- The canonical `0`-dimensional point manifold has exactly two interior manifold orientations. -/
+theorem point_has_two_manifoldOrientations :
+    ∃ oPos oNeg : ManifoldOrientation (I := (𝓘(ℝ, EuclideanSpace ℝ (Fin 0))))
+      (EuclideanSpace ℝ (Fin 0)),
+      oPos ≠ oNeg ∧
+      ∀ o : ManifoldOrientation (I := (𝓘(ℝ, EuclideanSpace ℝ (Fin 0))))
+        (EuclideanSpace ℝ (Fin 0)), o = oPos ∨ o = oNeg := by
+  let E0 := EuclideanSpace ℝ (Fin 0)
+  let I0 : ModelWithCorners ℝ E0 E0 := 𝓘(ℝ, E0)
+  letI : IsEmpty (Fin (Module.finrank ℝ E0)) := by
+    simpa [E0] using (inferInstance : IsEmpty (Fin 0))
+  let pointOriPos :
+      ∀ x : I0.interiorOpens (M := E0) one_ne_zero,
+        Orientation ℝ (TangentSpace I0 x) (Fin (Module.finrank ℝ E0)) := fun _ ↦
+          positiveOrientation
+  let pointOriNeg :
+      ∀ x : I0.interiorOpens one_ne_zero,
+        Orientation ℝ (TangentSpace I0 x) (Fin (Module.finrank ℝ E0)) := fun x ↦
+          -pointOriPos x
+  let oPos : ManifoldOrientation I0 E0 := {
+    tangentOrientation := pointOriPos
+    isOrientable := by infer_instance
+  }
+  let oNeg : ManifoldOrientation I0 E0 := {
+    tangentOrientation := pointOriNeg
+    isOrientable := by infer_instance
+  }
+  let x0 : I0.interiorOpens (M := E0) one_ne_zero := by
+    refine ⟨0, ?_⟩
+    simp [ModelWithCorners.interior_eq_univ]
+  have hExt : ∀ {o₁ o₂ : ManifoldOrientation (I := I0) E0},
+      o₁.tangentOrientation = o₂.tangentOrientation → o₁ = o₂ := by
+    rintro ⟨_, _⟩ ⟨_, _⟩ rfl
+    rfl
+  refine ⟨oPos, oNeg, ?_, ?_⟩
+  · intro h
+    have hx' : pointOriPos x0 = -pointOriPos x0 := by
+      simpa [oPos, oNeg, pointOriNeg] using congrArg (fun o ↦ o.tangentOrientation x0) h
+    exact (Module.Ray.ne_neg_self (pointOriPos x0)) hx'
+  · intro o
+    have hclass :
+        o.tangentOrientation x0 = pointOriPos x0 ∨
+          o.tangentOrientation x0 = pointOriNeg x0 := by
+      simpa [pointOriNeg] using Orientation.eq_or_eq_neg_of_isEmpty (o.tangentOrientation x0)
+    rcases hclass with hpos | hneg
+    · left
+      refine hExt ?_
+      funext x
+      cases (Subsingleton.elim x x0)
+      simpa [oPos] using hpos
+    · right
+      refine hExt ?_
+      funext x
+      cases (Subsingleton.elim x x0)
+      simpa [oNeg] using hneg
 
 end Orientable
 
