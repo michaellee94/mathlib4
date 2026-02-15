@@ -312,14 +312,10 @@ theorem point_has_two_manifoldOrientations :
       ∀ x : I0.interiorOpens one_ne_zero,
         Orientation ℝ (TangentSpace I0 x) (Fin (Module.finrank ℝ E0)) := fun x ↦
           -pointOriPos x
-  let oPos : ManifoldOrientation I0 E0 := {
-    tangentOrientation := pointOriPos
-    isOrientable := by infer_instance
-  }
-  let oNeg : ManifoldOrientation I0 E0 := {
-    tangentOrientation := pointOriNeg
-    isOrientable := by infer_instance
-  }
+  let oPos : ManifoldOrientation I0 E0 :=
+    { tangentOrientation := pointOriPos, isOrientable := by infer_instance }
+  let oNeg : ManifoldOrientation I0 E0 :=
+    { tangentOrientation := pointOriNeg, isOrientable := by infer_instance }
   let x0 : I0.interiorOpens (M := E0) one_ne_zero := by
     refine ⟨0, ?_⟩
     simp [ModelWithCorners.interior_eq_univ]
@@ -334,8 +330,7 @@ theorem point_has_two_manifoldOrientations :
     exact (Module.Ray.ne_neg_self (pointOriPos x0)) hx'
   · intro o
     have hclass :
-        o.tangentOrientation x0 = pointOriPos x0 ∨
-          o.tangentOrientation x0 = pointOriNeg x0 := by
+        o.tangentOrientation x0 = pointOriPos x0 ∨ o.tangentOrientation x0 = pointOriNeg x0 := by
       simpa [pointOriNeg] using Orientation.eq_or_eq_neg_of_isEmpty (o.tangentOrientation x0)
     rcases hclass with hpos | hneg
     · left
