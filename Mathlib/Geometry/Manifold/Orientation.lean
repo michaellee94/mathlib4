@@ -20,11 +20,11 @@ This file defines an orientation-preserving structure groupoid on a model with c
 ## Main definitions
 
 * `Manifold.modelSet`: the model-space set `I.symm ⁻¹' s ∩ range I`.
+* `Manifold.jacobianDetWithin`: Jacobian determinant of a map in model coordinates.
 * `Manifold.OrientationPreservingOn`: chart-space orientation-preserving condition on a set,
   using positive Jacobian determinant.
 * `Manifold.orientationPreservingPregroupoid`: corresponding pregroupoid.
 * `Manifold.orientationPreservingGroupoid`: corresponding structure groupoid.
-* `Manifold.Oriented`: manifold-level orientation predicate.
 * `Manifold.Orientable`: manifold-level orientability predicate.
 * `Manifold.tangentOrientation`: a choice of orientation on each tangent space induced from the
   model fiber orientation.
@@ -47,9 +47,9 @@ variable {E H : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensi
 /-- The model-space set corresponding to a set in chart space. -/
 abbrev modelSet (s : Set H) : Set E := I.symm ⁻¹' s ∩ range I
 
-/-- Chart-level orientation-preserving condition on a set:
-`C¹` in model coordinates with positive Jacobian determinant at every point. -/
-abbrev jacobianDetWithin (f : E → E) (s : Set E) (x : E) : ℝ :=
+/-- Jacobian determinant of `f` within `s` at `x`: the determinant of the Fréchet derivative
+of `f` restricted to `s`, viewed as a linear map `E →ₗ[ℝ] E`. -/
+def jacobianDetWithin (f : E → E) (s : Set E) (x : E) : ℝ :=
   LinearMap.det (↑(fderivWithin ℝ f s x) : E →ₗ[ℝ] E)
 
 /-- Chart-level orientation-preserving condition on a set:
@@ -88,12 +88,11 @@ theorem orientationPreservingOn_ofSet {s : Set H} (hs : IsOpen s) :
     have hEqOnId : EqOn (I ∘ I.symm) (fun y : E ↦ y) (modelSet I s) := by
       intro y hy
       exact I.right_inv hy.2
-    have hdetId : LinearMap.det (↑(ContinuousLinearMap.id ℝ E) : E →ₗ[ℝ] E) = (1 : ℝ) := by simp
     rw [jacobianDetWithin]
     rw [fderivWithin_congr hEqOn (hEqOn hx)]
     rw [fderivWithin_congr hEqOnId (hEqOnId hx)]
-    rw [fderivWithin_id' ((modelSet_uniqueDiffOn I hs) x hx), hdetId]
-    norm_num
+    rw [fderivWithin_id' ((modelSet_uniqueDiffOn I hs) x hx)]
+    simp
 
 /-- Pregroupoid of orientation-preserving chart maps. -/
 def orientationPreservingPregroupoid : Pregroupoid H where
@@ -162,8 +161,7 @@ def orientationPreservingPregroupoid : Pregroupoid H where
               (fderivWithin ℝ (I ∘ f ∘ I.symm) A x)) : E →ₗ[ℝ] E) =
           LinearMap.det
             ((↑(fderivWithin ℝ (I ∘ g ∘ I.symm) B ((I ∘ f ∘ I.symm) x)) : E →ₗ[ℝ] E) ∘ₗ
-              (↑(fderivWithin ℝ (I ∘ f ∘ I.symm) A x) : E →ₗ[ℝ] E)) by
-          simp]
+              (↑(fderivWithin ℝ (I ∘ f ∘ I.symm) A x) : E →ₗ[ℝ] E)) by simp]
       rw [LinearMap.det_comp]
       exact mul_pos hdet_g hdet_f
   id_mem := by
@@ -187,11 +185,8 @@ def orientationPreservingPregroupoid : Pregroupoid H where
               fderivWithin ℝ (fun y : E ↦ y) (modelSet I univ) x :=
             fderivWithin_congr hEqOn (hEqOn hx)
           _ = ContinuousLinearMap.id ℝ E := fderivWithin_id' hUnique
-      have hdetId :
-          LinearMap.det (↑(ContinuousLinearMap.id ℝ E) : E →ₗ[ℝ] E) = (1 : ℝ) := by
-        simp
-      rw [jacobianDetWithin, hderiv, hdetId]
-      norm_num
+      rw [jacobianDetWithin, hderiv]
+      simp
   locality {f u} hu h := by
     refine ⟨?_, ?_⟩
     · apply contDiffOn_of_locally_contDiffOn
@@ -258,7 +253,7 @@ theorem orientationPreservingGroupoid_le_contDiffGroupoid :
 omit [FiniteDimensional ℝ E] in
 theorem mem_orientationPreservingGroupoid_iff {e : OpenPartialHomeomorph H H} :
     e ∈ orientationPreservingGroupoid I ↔ OrientationPreservingOn I e e.source
-      ∧ OrientationPreservingOn I e.symm e.target := by rfl
+      ∧ OrientationPreservingOn I e.symm e.target := Iff.rfl
 
 omit [FiniteDimensional ℝ E] in
 theorem ofSet_mem_orientationPreservingGroupoid {s : Set H} (hs : IsOpen s) :
@@ -292,8 +287,6 @@ section Tangent
 variable {E H : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
   [TopologicalSpace H] {I : ModelWithCorners ℝ E H}
   {M : Type*} [TopologicalSpace M] [ChartedSpace H M]
-
-open scoped Manifold
 
 /-- The tangent-space orientation induced from an orientation of the model fiber. -/
 noncomputable def tangentOrientation {x : M} [FiniteDimensional ℝ E]
