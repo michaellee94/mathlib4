@@ -536,6 +536,13 @@ instance instOrientableIcc : Manifold.Orientable (𝓡∂ 1) (Set.Icc x y) := by
   exact hU ▸ (inferInstance : HasGroupoid (IccInteriorOpens x y)
     (Manifold.orientationPreservingGroupoid (𝓡∂ 1)))
 
+/-- The interval manifold `[x, y]` carries the orientation induced by the positive chart direction
+on its interior. -/
+instance instOrientedManifoldIcc : Manifold.OrientedManifold (𝓡∂ 1) (Set.Icc x y) where
+  manifoldOrientation :=
+    { sign := LocallyConstant.const _ 0
+      isOrientable := by infer_instance }
+
 /-! Register the manifold structure on `Icc 0 1`. These are merely special cases of
 `instIccChartedSpace` and `instIsManifoldIcc`. -/
 
