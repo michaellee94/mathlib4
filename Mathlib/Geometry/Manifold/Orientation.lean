@@ -25,6 +25,7 @@ This file defines an orientation-preserving structure groupoid on a model with c
 * `Manifold.orientationPreservingPregroupoid`: corresponding pregroupoid.
 * `Manifold.orientationPreservingGroupoid`: corresponding structure groupoid.
 * `Manifold.Oriented`: manifold-level orientation predicate.
+* `Manifold.Orientable`: manifold-level orientability predicate.
 * `Manifold.tangentOrientation`: a choice of orientation on each tangent space induced from the
   model fiber orientation.
 -/
@@ -283,17 +284,17 @@ instance : ClosedUnderRestriction (orientationPreservingGroupoid I) :=
 
 end Groupoid
 
-section Oriented
+section Orientable
 
 variable {E H : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E]
   [TopologicalSpace H] (I : ModelWithCorners ℝ E H)
 
-/-- A manifold is `Oriented` if its atlas is compatible with the
+/-- A manifold is `Orientable` if its atlas is compatible with the
 `orientationPreservingGroupoid`. -/
-abbrev Oriented (M : Type*) [TopologicalSpace M] [ChartedSpace H M] : Prop :=
+abbrev Orientable (M : Type*) [TopologicalSpace M] [ChartedSpace H M] : Prop :=
   HasGroupoid M (orientationPreservingGroupoid I)
 
-end Oriented
+end Orientable
 
 section Tangent
 
