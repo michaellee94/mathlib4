@@ -8,11 +8,14 @@ module
 public import Mathlib.Analysis.Calculus.FDeriv.Comp
 public import Mathlib.Analysis.Calculus.FDeriv.Congr
 public import Mathlib.Analysis.InnerProductSpace.PiL2
+public import Mathlib.Data.Finite.Card
 public import Mathlib.Geometry.Manifold.ContMDiff.Basic
 public import Mathlib.Geometry.Manifold.IsManifold.InteriorBoundary
 public import Mathlib.Geometry.Manifold.IsManifold.Basic
 public import Mathlib.LinearAlgebra.Dimension.Finite
 public import Mathlib.LinearAlgebra.Orientation
+public import Mathlib.Topology.Connected.TotallyDisconnected
+public import Mathlib.Topology.LocallyConstant.Basic
 
 /-!
 # Manifold orientation helpers
@@ -257,20 +260,64 @@ section Orientable
 variable {E H : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E]
   [TopologicalSpace H] (I : ModelWithCorners ℝ E H)
 
+/-- A fixed reference orientation on the model space. -/
+noncomputable def baseOrientation : Orientation ℝ E (Fin (Module.finrank ℝ E)) :=
+  (Module.finBasis ℝ E).orientation
+
+/-- The orientation encoded by a sign: `0` for `baseOrientation`, `1` for its negation. -/
+noncomputable def orientationFromSign (s : Fin 2) : Orientation ℝ E (Fin (Module.finrank ℝ E)) :=
+  if s = 0 then baseOrientation (E := E) else -baseOrientation (E := E)
+
 /-- Data of a chosen orientation on the interior of a manifold.
 
+The field `sign` stores a locally constant sign assignment on the interior; this determines a
+locally constant field of tangent-space orientations via `ManifoldOrientation.tangentOrientation`.
 The field `isOrientable` records compatibility of the interior atlas with
-`orientationPreservingGroupoid`; the field `tangentOrientation` stores a specific orientation on
-each interior tangent space. -/
+`orientationPreservingGroupoid`. -/
 structure ManifoldOrientation (M : Type*) [TopologicalSpace M] [ChartedSpace H M]
     [IsManifold I 1 M] where
-  /-- Chosen orientation on each tangent space at interior points. -/
-  tangentOrientation :
-    ∀ x : I.interiorOpens (M := M) one_ne_zero,
-      Orientation ℝ (TangentSpace I x) (Fin (Module.finrank ℝ E))
+  /-- A locally constant sign choice on interior points. -/
+  sign : LocallyConstant (I.interiorOpens (M := M) one_ne_zero) (Fin 2)
   /-- Compatibility of the interior atlas with the orientation-preserving groupoid. -/
   isOrientable :
     HasGroupoid (I.interiorOpens (M := M) one_ne_zero) (orientationPreservingGroupoid I)
+
+/-- The locally constant orientation field encoded by a manifold-orientation sign choice. -/
+abbrev ManifoldOrientation.tangentOrientation {M : Type*} [TopologicalSpace M] [ChartedSpace H M]
+    [IsManifold I 1 M] (o : ManifoldOrientation I M) :
+    LocallyConstant (I.interiorOpens (M := M) one_ne_zero)
+      (Orientation ℝ E (Fin (Module.finrank ℝ E))) :=
+  o.sign.map (orientationFromSign (E := E))
+
+/-- At each interior point, the induced orientation is either the reference one or its negation. -/
+theorem ManifoldOrientation.tangentOrientation_eq_positive_or_neg {M : Type*} [TopologicalSpace M]
+    [ChartedSpace H M] [IsManifold I 1 M] (o : ManifoldOrientation I M)
+    (x : I.interiorOpens (M := M) one_ne_zero) :
+    o.tangentOrientation I x = baseOrientation (E := E) ∨
+      o.tangentOrientation I x = -baseOrientation (E := E) := by
+  simp only [tangentOrientation, LocallyConstant.map_apply, Function.comp_apply,
+    orientationFromSign]
+  by_cases h : o.sign x = 0
+  · left
+    simp [h]
+  · right
+    simp [h]
+
+omit [FiniteDimensional ℝ E] in
+/-- Extensionality for manifold orientations: the locally constant sign determines the structure. -/
+theorem ManifoldOrientation.ext_sign {M : Type*} [TopologicalSpace M] [ChartedSpace H M]
+    [IsManifold I 1 M] {o₁ o₂ : ManifoldOrientation I M} (h : o₁.sign = o₂.sign) : o₁ = o₂ := by
+  cases o₁
+  cases o₂
+  cases h
+  rfl
+
+/-- A chosen manifold orientation packages both local-constancy and chart compatibility. -/
+theorem ManifoldOrientation.compatible_and_locallyConstant {M : Type*} [TopologicalSpace M]
+    [ChartedSpace H M] [IsManifold I 1 M] (o : ManifoldOrientation I M) :
+    HasGroupoid (I.interiorOpens (M := M) one_ne_zero) (orientationPreservingGroupoid I) ∧
+      IsLocallyConstant (o.tangentOrientation I) :=
+  ⟨o.isOrientable, (o.tangentOrientation I).isLocallyConstant⟩
 
 /-- A manifold is `Orientable` if its atlas is compatible with the
 `orientationPreservingGroupoid` on its manifold interior. -/
@@ -279,19 +326,19 @@ abbrev Orientable (M : Type*) [TopologicalSpace M] [ChartedSpace H M] [IsManifol
 
 /-- Typeclass choosing a specific orientation on the interior of a manifold. -/
 class OrientedManifold (M : Type*) [TopologicalSpace M] [ChartedSpace H M] [IsManifold I 1 M]
-    where
-  manifoldOrientation : ManifoldOrientation I M
+    where manifoldOrientation : ManifoldOrientation I M
 
 /-- An oriented manifold is orientable. -/
 instance (M : Type*) [TopologicalSpace M] [ChartedSpace H M] [IsManifold I 1 M]
-    [OrientedManifold I M] : Orientable I M := OrientedManifold.manifoldOrientation.isOrientable
+    [o : OrientedManifold I M] : Orientable I M := o.manifoldOrientation.isOrientable
 
 /-- The chosen orientation on tangent spaces at interior points of an oriented manifold. -/
 abbrev orientedTangentOrientation (M : Type*) [TopologicalSpace M] [ChartedSpace H M]
-    [IsManifold I 1 M] [OrientedManifold I M]
+    [IsManifold I 1 M] [o : OrientedManifold I M]
     (x : I.interiorOpens (M := M) one_ne_zero) :
     Orientation ℝ (TangentSpace I x) (Fin (Module.finrank ℝ E)) :=
-  OrientedManifold.manifoldOrientation.tangentOrientation x
+  by
+    simpa [TangentSpace] using (o.manifoldOrientation.tangentOrientation I x)
 
 /-- The canonical `0`-dimensional point manifold has exactly two interior manifold orientations. -/
 theorem point_has_two_manifoldOrientations :
@@ -302,47 +349,40 @@ theorem point_has_two_manifoldOrientations :
         (EuclideanSpace ℝ (Fin 0)), o = oPos ∨ o = oNeg := by
   let E0 := EuclideanSpace ℝ (Fin 0)
   let I0 : ModelWithCorners ℝ E0 E0 := 𝓘(ℝ, E0)
-  letI : IsEmpty (Fin (Module.finrank ℝ E0)) := by
-    simpa [E0] using (inferInstance : IsEmpty (Fin 0))
-  let pointOriPos :
-      ∀ x : I0.interiorOpens (M := E0) one_ne_zero,
-        Orientation ℝ (TangentSpace I0 x) (Fin (Module.finrank ℝ E0)) := fun _ ↦
-          positiveOrientation
-  let pointOriNeg :
-      ∀ x : I0.interiorOpens one_ne_zero,
-        Orientation ℝ (TangentSpace I0 x) (Fin (Module.finrank ℝ E0)) := fun x ↦
-          -pointOriPos x
-  let oPos : ManifoldOrientation I0 E0 :=
-    { tangentOrientation := pointOriPos, isOrientable := by infer_instance }
-  let oNeg : ManifoldOrientation I0 E0 :=
-    { tangentOrientation := pointOriNeg, isOrientable := by infer_instance }
+  let signPos : LocallyConstant (I0.interiorOpens (M := E0) one_ne_zero) (Fin 2) :=
+    LocallyConstant.const _ 0
+  let signNeg : LocallyConstant (I0.interiorOpens (M := E0) one_ne_zero) (Fin 2) :=
+    LocallyConstant.const _ 1
+  let oPos : ManifoldOrientation I0 E0 := { sign := signPos, isOrientable := by infer_instance }
+  let oNeg : ManifoldOrientation I0 E0 := { sign := signNeg, isOrientable := by infer_instance }
   let x0 : I0.interiorOpens (M := E0) one_ne_zero := by
     refine ⟨0, ?_⟩
     simp [ModelWithCorners.interior_eq_univ]
-  have hExt : ∀ {o₁ o₂ : ManifoldOrientation I0 E0},
-      o₁.tangentOrientation = o₂.tangentOrientation → o₁ = o₂ := by
-    rintro ⟨_, _⟩ ⟨_, _⟩ rfl
-    rfl
   refine ⟨oPos, oNeg, ?_, ?_⟩
   · intro h
-    have hx' : pointOriPos x0 = -pointOriPos x0 := by
-      simpa [oPos, oNeg, pointOriNeg] using congrArg (fun o ↦ o.tangentOrientation x0) h
-    exact (Module.Ray.ne_neg_self (pointOriPos x0)) hx'
+    have hx : oPos.sign x0 = oNeg.sign x0 := congrArg (fun o ↦ o.sign x0) h
+    simp [oPos, oNeg, signPos, signNeg] at hx
   · intro o
-    have hclass :
-        o.tangentOrientation x0 = pointOriPos x0 ∨ o.tangentOrientation x0 = pointOriNeg x0 := by
-      simpa [pointOriNeg] using Orientation.eq_or_eq_neg_of_isEmpty (o.tangentOrientation x0)
-    rcases hclass with hpos | hneg
+    by_cases h0 : o.sign x0 = 0
     · left
-      refine hExt ?_
-      funext x
-      cases (Subsingleton.elim x x0)
-      simpa [oPos] using hpos
+      apply ManifoldOrientation.ext_sign I0
+      ext x
+      cases Subsingleton.elim x x0
+      have h0val : ↑(o.sign x0) = (0 : ℕ) := by
+        simpa using congrArg Fin.val h0
+      calc
+        ↑(o.sign x0) = (0 : ℕ) := h0val
+        _ = ↑(oPos.sign x0) := by simp [oPos, signPos]
     · right
-      refine hExt ?_
-      funext x
-      cases (Subsingleton.elim x x0)
-      simpa [oNeg] using hneg
+      apply ManifoldOrientation.ext_sign I0
+      ext x
+      cases Subsingleton.elim x x0
+      have h1 : o.sign x0 = 1 := Fin.eq_one_of_ne_zero _ h0
+      have h1val : ↑(o.sign x0) = (1 : ℕ) := by
+        simpa using congrArg Fin.val h1
+      calc
+        ↑(o.sign x0) = (1 : ℕ) := h1val
+        _ = ↑(oNeg.sign x0) := by simp [oNeg, signNeg]
 
 end Orientable
 
