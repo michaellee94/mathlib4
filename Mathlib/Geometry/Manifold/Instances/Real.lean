@@ -477,10 +477,6 @@ instance instHasGroupoidIccInteriorOrientation :
       (((IccLeftChart x y).subtypeRestr hU).open_target))
     (((IccLeftChart x y).subtypeRestr hU).symm_trans_self)
 
-instance instOrientableIcc : Manifold.Orientable (I := (𝓡∂ 1)) (Set.Icc x y) := by
-  refine ⟨IccInteriorOpens x y, coe_IccInteriorOpens_eq_interior, ?_⟩
-  infer_instance
-
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
   {H : Type*} [TopologicalSpace H] (I : ModelWithCorners ℝ E H)
   {M : Type*} [TopologicalSpace M] [ChartedSpace H M]
@@ -528,6 +524,17 @@ instance instIsManifoldIcc (x y : ℝ) [Fact (x < y)] {n : WithTop ℕ∞} :
     abel
   · -- `e = right chart`, `e' = right chart`
     exact (mem_groupoid_of_pregroupoid.mpr (symm_trans_mem_contDiffGroupoid _)).1
+
+instance instOrientableIcc : Manifold.Orientable (I := (𝓡∂ 1)) (Set.Icc x y) := by
+  change HasGroupoid (((𝓡∂ 1).interiorOpens (M := Set.Icc x y) (n := 1) one_ne_zero))
+    (Manifold.orientationPreservingGroupoid (I := (𝓡∂ 1)))
+  have hU :
+      IccInteriorOpens x y = ((𝓡∂ 1).interiorOpens (M := Set.Icc x y) (n := 1) one_ne_zero) := by
+    ext p
+    simpa [ModelWithCorners.interiorOpens] using
+      congrArg (fun s : Set (Set.Icc x y) => p ∈ s) coe_IccInteriorOpens_eq_interior
+  exact hU ▸ (inferInstance : HasGroupoid (IccInteriorOpens x y)
+    (Manifold.orientationPreservingGroupoid (I := (𝓡∂ 1))))
 
 /-! Register the manifold structure on `Icc 0 1`. These are merely special cases of
 `instIccChartedSpace` and `instIsManifoldIcc`. -/
