@@ -259,7 +259,7 @@ variable {E H : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensi
 /-- A manifold is `Orientable` if its atlas is compatible with the
 `orientationPreservingGroupoid` on its manifold interior. -/
 abbrev Orientable (M : Type*) [TopologicalSpace M] [ChartedSpace H M] [IsManifold I 1 M] : Prop :=
-  HasGroupoid (I.interiorOpens (M := M) (n := 1) one_ne_zero) (orientationPreservingGroupoid I)
+  HasGroupoid (I.interiorOpens (M := M) one_ne_zero) (orientationPreservingGroupoid I)
 
 end Orientable
 
