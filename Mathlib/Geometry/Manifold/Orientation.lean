@@ -27,8 +27,8 @@ This file defines an orientation-preserving structure groupoid on a model with c
 * `Manifold.orientationPreservingPregroupoid`: corresponding pregroupoid.
 * `Manifold.orientationPreservingGroupoid`: corresponding structure groupoid.
 * `Manifold.Orientable`: manifold-level interior orientability predicate.
-* `Manifold.tangentOrientation`: a choice of orientation on each tangent space induced from the
-  model fiber orientation.
+* `Manifold.ManifoldOrientation`: data of a chosen orientation on the manifold interior.
+* `Manifold.OrientedManifold`: typeclass choosing a specific interior orientation.
 -/
 
 @[expose] public section
@@ -256,24 +256,44 @@ section Orientable
 variable {E H : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E]
   [TopologicalSpace H] (I : ModelWithCorners ℝ E H)
 
+/-- Data of a chosen orientation on the interior of a manifold.
+
+The field `isOrientable` records compatibility of the interior atlas with
+`orientationPreservingGroupoid`; the field `tangentOrientation` stores a specific orientation on
+each interior tangent space. -/
+structure ManifoldOrientation (M : Type*) [TopologicalSpace M] [ChartedSpace H M]
+    [IsManifold I 1 M] where
+  tangentOrientation :
+    ∀ x : I.interiorOpens (M := M) one_ne_zero,
+      Orientation ℝ (TangentSpace I x) (Fin (Module.finrank ℝ E))
+  isOrientable :
+    HasGroupoid (I.interiorOpens (M := M) one_ne_zero) (orientationPreservingGroupoid I)
+
+attribute [instance] ManifoldOrientation.isOrientable
+
 /-- A manifold is `Orientable` if its atlas is compatible with the
 `orientationPreservingGroupoid` on its manifold interior. -/
 abbrev Orientable (M : Type*) [TopologicalSpace M] [ChartedSpace H M] [IsManifold I 1 M] : Prop :=
   HasGroupoid (I.interiorOpens (M := M) one_ne_zero) (orientationPreservingGroupoid I)
 
+/-- Typeclass choosing a specific orientation on the interior of a manifold. -/
+class OrientedManifold (M : Type*) [TopologicalSpace M] [ChartedSpace H M] [IsManifold I 1 M]
+    where
+  manifoldOrientation : ManifoldOrientation I M
+
+attribute [instance] OrientedManifold.manifoldOrientation
+
+/-- An oriented manifold is orientable. -/
+instance (M : Type*) [TopologicalSpace M] [ChartedSpace H M] [IsManifold I 1 M]
+    [OrientedManifold I M] : Orientable I M := OrientedManifold.manifoldOrientation.isOrientable
+
+/-- The chosen orientation on tangent spaces at interior points of an oriented manifold. -/
+abbrev orientedTangentOrientation (M : Type*) [TopologicalSpace M] [ChartedSpace H M]
+    [IsManifold I 1 M] [OrientedManifold I M]
+    (x : I.interiorOpens (M := M) one_ne_zero) :
+    Orientation ℝ (TangentSpace I x) (Fin (Module.finrank ℝ E)) :=
+  OrientedManifold.manifoldOrientation.tangentOrientation x
+
 end Orientable
-
-section Tangent
-
-variable {E H : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
-  [TopologicalSpace H] {I : ModelWithCorners ℝ E H}
-  {M : Type*} [TopologicalSpace M] [ChartedSpace H M]
-
-/-- The tangent-space orientation induced from an orientation of the model fiber. -/
-noncomputable def tangentOrientation {x : M} [Module.Oriented ℝ E (Fin (Module.finrank ℝ E))] :
-    Orientation ℝ (TangentSpace I x) (Fin (Module.finrank ℝ E)) := (positiveOrientation :
-      Orientation ℝ E (Fin (Module.finrank ℝ E)))
-
-end Tangent
 
 end Manifold
