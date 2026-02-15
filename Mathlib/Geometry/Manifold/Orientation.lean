@@ -269,8 +269,7 @@ variable {E H : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
   {M : Type*} [TopologicalSpace M] [ChartedSpace H M]
 
 /-- The tangent-space orientation induced from an orientation of the model fiber. -/
-noncomputable def tangentOrientation {x : M} [FiniteDimensional ℝ E]
-    [Module.Oriented ℝ E (Fin (Module.finrank ℝ E))] :
+noncomputable def tangentOrientation {x : M} [Module.Oriented ℝ E (Fin (Module.finrank ℝ E))] :
     Orientation ℝ (TangentSpace I x) (Fin (Module.finrank ℝ E)) := (positiveOrientation :
       Orientation ℝ E (Fin (Module.finrank ℝ E)))
 
