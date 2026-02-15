@@ -7,6 +7,7 @@ module
 
 public import Mathlib.Analysis.Calculus.ContDiff.WithLp
 public import Mathlib.Analysis.InnerProductSpace.PiL2
+public import Mathlib.Geometry.Manifold.Orientation
 public import Mathlib.Geometry.Manifold.IsManifold.InteriorBoundary
 
 /-!
@@ -433,6 +434,52 @@ lemma boundary_Icc : (𝓡∂ 1).boundary (Icc x y) = {⊥, ⊤} := by
     · simpa [← mem_compl_iff, ModelWithCorners.compl_boundary] using
         Icc_isInteriorPoint_interior hp
     · rintro (rfl | rfl) <;> simp at hp
+
+/-- Open interior interval inside `[x, y]`, seen as an open subset of `Set.Icc x y`. -/
+def IccInteriorOpens (x y : ℝ) [Fact (x < y)] : TopologicalSpace.Opens (Set.Icc x y) :=
+  ⟨{p : Set.Icc x y | x < p.1 ∧ p.1 < y},
+    (isOpen_lt continuous_const continuous_subtype_val).inter
+      (isOpen_lt continuous_subtype_val continuous_const)⟩
+
+lemma coe_IccInteriorOpens_eq_interior :
+    (↑(IccInteriorOpens x y) : Set (Set.Icc x y)) = (𝓡∂ 1).interior (Set.Icc x y) := by
+  ext p
+  constructor
+  · intro hp
+    exact Icc_isInteriorPoint_interior hp
+  · intro hp
+    have hnotb : ¬(𝓡∂ 1).IsBoundaryPoint p :=
+      (ModelWithCorners.isInteriorPoint_iff_not_isBoundaryPoint (I := (𝓡∂ 1)) p).mp hp
+    rcases Set.eq_endpoints_or_mem_Ioo_of_mem_Icc p.2 with hp0 | hp1 | hpIoo
+    · exfalso
+      have hpbot : p = ⊥ := SetCoe.ext hp0
+      exact hnotb (hpbot ▸ Icc_isBoundaryPoint_bot)
+    · exfalso
+      have hptop : p = ⊤ := SetCoe.ext hp1
+      exact hnotb (hptop ▸ Icc_isBoundaryPoint_top)
+    · exact hpIoo
+
+instance instHasGroupoidIccInteriorOrientation :
+    HasGroupoid (IccInteriorOpens x y)
+      (Manifold.orientationPreservingGroupoid (I := (𝓡∂ 1))) := by
+  constructor
+  intro e e' he he'
+  let U := IccInteriorOpens x y
+  have hU : Nonempty U := by
+    refine ⟨⟨⟨(x + y) / 2, ?_⟩, ?_⟩⟩
+    · constructor <;> linarith [hxy.out]
+    · constructor <;> linarith [hxy.out]
+  obtain ⟨p, hp⟩ := TopologicalSpace.Opens.chart_eq (H := EuclideanHalfSpace 1) (s := U) hU he
+  obtain ⟨p', hp'⟩ := TopologicalSpace.Opens.chart_eq (H := EuclideanHalfSpace 1) (s := U) hU he'
+  rw [hp, hp', Icc_chartedSpaceChartAt_of_le_top p.2.2, Icc_chartedSpaceChartAt_of_le_top p'.2.2]
+  exact (Manifold.orientationPreservingGroupoid (I := (𝓡∂ 1))).mem_of_eqOnSource
+    (Manifold.ofSet_mem_orientationPreservingGroupoid (I := (𝓡∂ 1))
+      (((IccLeftChart x y).subtypeRestr hU).open_target))
+    (((IccLeftChart x y).subtypeRestr hU).symm_trans_self)
+
+instance instOrientableIcc : Manifold.Orientable (I := (𝓡∂ 1)) (Set.Icc x y) := by
+  refine ⟨IccInteriorOpens x y, coe_IccInteriorOpens_eq_interior, ?_⟩
+  infer_instance
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
   {H : Type*} [TopologicalSpace H] (I : ModelWithCorners ℝ E H)

@@ -8,6 +8,7 @@ module
 public import Mathlib.Analysis.Calculus.FDeriv.Comp
 public import Mathlib.Analysis.Calculus.FDeriv.Congr
 public import Mathlib.Geometry.Manifold.ContMDiff.Basic
+public import Mathlib.Geometry.Manifold.IsManifold.InteriorBoundary
 public import Mathlib.Geometry.Manifold.IsManifold.Basic
 public import Mathlib.LinearAlgebra.Dimension.Finite
 public import Mathlib.LinearAlgebra.Orientation
@@ -25,7 +26,7 @@ This file defines an orientation-preserving structure groupoid on a model with c
   using positive Jacobian determinant.
 * `Manifold.orientationPreservingPregroupoid`: corresponding pregroupoid.
 * `Manifold.orientationPreservingGroupoid`: corresponding structure groupoid.
-* `Manifold.Orientable`: manifold-level orientability predicate.
+* `Manifold.Orientable`: manifold-level interior orientability predicate.
 * `Manifold.tangentOrientation`: a choice of orientation on each tangent space induced from the
   model fiber orientation.
 -/
@@ -256,9 +257,10 @@ variable {E H : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensi
   [TopologicalSpace H] (I : ModelWithCorners ℝ E H)
 
 /-- A manifold is `Orientable` if its atlas is compatible with the
-`orientationPreservingGroupoid`. -/
+`orientationPreservingGroupoid` on an open subset realizing the manifold interior. -/
 abbrev Orientable (M : Type*) [TopologicalSpace M] [ChartedSpace H M] : Prop :=
-  HasGroupoid M (orientationPreservingGroupoid I)
+  ∃ U : TopologicalSpace.Opens M, (↑U : Set M) = I.interior M ∧
+    HasGroupoid U (orientationPreservingGroupoid I)
 
 end Orientable
 
