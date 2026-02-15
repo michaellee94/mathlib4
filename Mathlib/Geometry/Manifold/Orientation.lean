@@ -71,15 +71,7 @@ omit [FiniteDimensional ℝ E] in
 theorem orientationPreservingOn_ofSet {s : Set H} (hs : IsOpen s) :
     OrientationPreservingOn I (OpenPartialHomeomorph.ofSet s hs) s := by
   refine ⟨?_, ?_⟩
-  · have hIdOnModel : ContDiffOn ℝ 1 (fun x : E ↦ x) (modelSet I s) :=
-      contDiff_id.contDiffOn.mono (subset_univ _)
-    have hIIsymm : ContDiffOn ℝ 1 (I ∘ I.symm) (modelSet I s) := by
-      refine hIdOnModel.congr ?_
-      intro x hx
-      exact I.right_inv hx.2
-    refine hIIsymm.congr ?_
-    intro x hx
-    simp [Function.comp]
+  · exact contDiffOn_id.congr fun x hx => by simp [Function.comp, I.right_inv hx.2]
   · intro x hx
     have hEqOn : EqOn (I ∘ (OpenPartialHomeomorph.ofSet s hs : H → H) ∘ I.symm)
         (I ∘ I.symm) (modelSet I s) := by
@@ -124,10 +116,10 @@ def orientationPreservingPregroupoid : Pregroupoid H where
         refine ⟨?_, Set.mem_range_self _⟩
         simpa [A, B, modelSet, Function.comp, I.left_inv] using hy.1.2
       have hfd : DifferentiableWithinAt ℝ (I ∘ f ∘ I.symm) A x :=
-        (hfcont.differentiableOn (by decide) x (show x ∈ modelSet I u from ⟨hx.1.1, hx.2⟩)).mono
+        (hfcont.differentiableOn one_ne_zero x (show x ∈ modelSet I u from ⟨hx.1.1, hx.2⟩)).mono
           (show A ⊆ modelSet I u from fun y hy => ⟨hy.1.1, hy.2⟩)
       have hgd : DifferentiableWithinAt ℝ (I ∘ g ∘ I.symm) B ((I ∘ f ∘ I.symm) x) :=
-        (hgcont.differentiableOn (by decide) ((I ∘ f ∘ I.symm) x)
+        (hgcont.differentiableOn one_ne_zero ((I ∘ f ∘ I.symm) x)
           (show (I ∘ f ∘ I.symm) x ∈ modelSet I v from hxB))
       have hcomp :
           fderivWithin ℝ (I ∘ (g ∘ f) ∘ I.symm) A x =
@@ -166,11 +158,7 @@ def orientationPreservingPregroupoid : Pregroupoid H where
       exact mul_pos hdet_g hdet_f
   id_mem := by
     refine ⟨?_, ?_⟩
-    · have hIdOnModel : ContDiffOn ℝ 1 (fun x : E ↦ x) (modelSet I univ) := by
-        exact contDiff_id.contDiffOn.mono (subset_univ _)
-      refine hIdOnModel.congr ?_
-      intro x hx
-      simp [Function.comp, I.right_inv hx.2]
+    · exact contDiffOn_id.congr fun x hx => by simp [Function.comp, I.right_inv hx.2]
     · intro x hx
       have hEqOn : EqOn (I ∘ (id : H → H) ∘ I.symm) (fun y : E ↦ y) (modelSet I univ) := by
         intro y hy
@@ -214,7 +202,7 @@ def orientationPreservingPregroupoid : Pregroupoid H where
           fderivWithin ℝ (I ∘ f ∘ I.symm) (modelSet I u) y =
             fderivWithin ℝ (I ∘ f ∘ I.symm) (modelSet I (u ∩ v)) y :=
         fderivWithin_of_mem_nhdsWithin hst
-          ((modelSet_uniqueDiffOn I hu) y hy) (hvcont.differentiableOn (by decide) y hyuv)
+          ((modelSet_uniqueDiffOn I hu) y hy) (hvcont.differentiableOn one_ne_zero y hyuv)
       have hdetEq :
           jacobianDetWithin (I ∘ f ∘ I.symm) (modelSet I u) y =
             jacobianDetWithin (I ∘ f ∘ I.symm) (modelSet I (u ∩ v)) y := by
@@ -291,8 +279,8 @@ variable {E H : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 /-- The tangent-space orientation induced from an orientation of the model fiber. -/
 noncomputable def tangentOrientation {x : M} [FiniteDimensional ℝ E]
     [Module.Oriented ℝ E (Fin (Module.finrank ℝ E))] :
-    Orientation ℝ (TangentSpace I x) (Fin (Module.finrank ℝ E)) := by
-  simpa [TangentSpace] using (positiveOrientation : Orientation ℝ E (Fin (Module.finrank ℝ E)))
+    Orientation ℝ (TangentSpace I x) (Fin (Module.finrank ℝ E)) := (positiveOrientation :
+      Orientation ℝ E (Fin (Module.finrank ℝ E)))
 
 end Tangent
 
