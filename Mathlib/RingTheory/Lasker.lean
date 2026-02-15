@@ -10,6 +10,8 @@ public import Mathlib.RingTheory.Ideal.Colon
 public import Mathlib.RingTheory.Ideal.IsPrimary
 public import Mathlib.RingTheory.Ideal.MinimalPrime.Localization
 public import Mathlib.RingTheory.Noetherian.Defs
+public import Mathlib.RingTheory.IsPrimary
+public import Mathlib.RingTheory.Ideal.MinimalPrime.Basic
 
 /-!
 # Lasker ring
