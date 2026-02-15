@@ -102,17 +102,15 @@ def orientationPreservingPregroupoid : Pregroupoid H where
     rcases hf with ⟨hfcont, hfdet⟩
     rcases hg with ⟨hgcont, hgdet⟩
     refine ⟨?_, ?_⟩
-    · have hcompCont :
-          ContDiffOn ℝ 1 (((I ∘ g ∘ I.symm) ∘ (I ∘ f ∘ I.symm)))
-            (modelSet I (u ∩ f ⁻¹' v)) := by
+    · have hcompCont : ContDiffOn ℝ 1 (((I ∘ g ∘ I.symm) ∘ (I ∘ f ∘ I.symm)))
+          (modelSet I (u ∩ f ⁻¹' v)) := by
         refine hgcont.comp (hfcont.mono ?_) ?_
         · intro x hx
           exact ⟨hx.1.1, hx.2⟩
         · intro x hx
           refine ⟨?_, Set.mem_range_self _⟩
           simpa [modelSet, Function.comp, I.left_inv] using hx.1.2
-      have hfun :
-          I ∘ (g ∘ f) ∘ I.symm = ((I ∘ g ∘ I.symm) ∘ (I ∘ f ∘ I.symm)) := by
+      have hfun : I ∘ (g ∘ f) ∘ I.symm = ((I ∘ g ∘ I.symm) ∘ (I ∘ f ∘ I.symm)) := by
         funext y
         simp [Function.comp, I.left_inv]
       simpa [hfun] using hcompCont
@@ -126,25 +124,21 @@ def orientationPreservingPregroupoid : Pregroupoid H where
         intro y hy
         refine ⟨?_, Set.mem_range_self _⟩
         simpa [A, B, modelSet, Function.comp, I.left_inv] using hy.1.2
-      have hfd :
-          DifferentiableWithinAt ℝ (I ∘ f ∘ I.symm) A x :=
+      have hfd : DifferentiableWithinAt ℝ (I ∘ f ∘ I.symm) A x :=
         (hfcont.differentiableOn (by decide) x (show x ∈ modelSet I u from ⟨hx.1.1, hx.2⟩)).mono
           (show A ⊆ modelSet I u from fun y hy => ⟨hy.1.1, hy.2⟩)
-      have hgd :
-          DifferentiableWithinAt ℝ (I ∘ g ∘ I.symm) B ((I ∘ f ∘ I.symm) x) :=
+      have hgd : DifferentiableWithinAt ℝ (I ∘ g ∘ I.symm) B ((I ∘ f ∘ I.symm) x) :=
         (hgcont.differentiableOn (by decide) ((I ∘ f ∘ I.symm) x)
           (show (I ∘ f ∘ I.symm) x ∈ modelSet I v from hxB))
-      have hUnique : UniqueDiffWithinAt ℝ A x := (modelSet_uniqueDiffOn I huv) x hx
       have hcomp :
           fderivWithin ℝ (I ∘ (g ∘ f) ∘ I.symm) A x =
             (fderivWithin ℝ (I ∘ g ∘ I.symm) B ((I ∘ f ∘ I.symm) x)).comp
               (fderivWithin ℝ (I ∘ f ∘ I.symm) A x) := by
-        have hfun :
-            I ∘ (g ∘ f) ∘ I.symm = ((I ∘ g ∘ I.symm) ∘ (I ∘ f ∘ I.symm)) := by
+        have hfun : I ∘ (g ∘ f) ∘ I.symm = ((I ∘ g ∘ I.symm) ∘ (I ∘ f ∘ I.symm)) := by
           funext y
           simp [Function.comp, I.left_inv]
         rw [hfun]
-        exact fderivWithin_comp x hgd hfd hmaps hUnique
+        exact fderivWithin_comp x hgd hfd hmaps ((modelSet_uniqueDiffOn I huv) x hx)
       have hA_nhds : A ∈ nhdsWithin x (modelSet I u) := by
         refine mem_nhdsWithin.mpr ?_
         refine ⟨I.symm ⁻¹' (u ∩ f ⁻¹' v), huv.preimage I.continuous_symm, ?_, ?_⟩
@@ -153,16 +147,13 @@ def orientationPreservingPregroupoid : Pregroupoid H where
           exact ⟨hy.1, hy.2.2⟩
       have hUniqueU : UniqueDiffWithinAt ℝ (modelSet I u) x :=
         (modelSet_uniqueDiffOn I hu) x ⟨hx.1.1, hx.2⟩
-      have hderiv_f :
-          fderivWithin ℝ (I ∘ f ∘ I.symm) (modelSet I u) x =
-            fderivWithin ℝ (I ∘ f ∘ I.symm) A x :=
+      have hderiv_f : fderivWithin ℝ (I ∘ f ∘ I.symm) (modelSet I u) x =
+          fderivWithin ℝ (I ∘ f ∘ I.symm) A x :=
         fderivWithin_of_mem_nhdsWithin hA_nhds hUniqueU hfd
-      have hdet_f :
-          0 < jacobianDetWithin (I ∘ f ∘ I.symm) A x := by
+      have hdet_f : 0 < jacobianDetWithin (I ∘ f ∘ I.symm) A x := by
         simpa [jacobianDetWithin, hderiv_f] using
           (hfdet x (show x ∈ modelSet I u from ⟨hx.1.1, hx.2⟩))
-      have hdet_g :
-          0 < jacobianDetWithin (I ∘ g ∘ I.symm) B ((I ∘ f ∘ I.symm) x) :=
+      have hdet_g : 0 < jacobianDetWithin (I ∘ g ∘ I.symm) B ((I ∘ f ∘ I.symm) x) :=
         hgdet ((I ∘ f ∘ I.symm) x) (show (I ∘ f ∘ I.symm) x ∈ modelSet I v from hxB)
       rw [jacobianDetWithin, hcomp]
       rw [show
@@ -308,8 +299,7 @@ open scoped Manifold
 noncomputable def tangentOrientation {x : M} [FiniteDimensional ℝ E]
     [Module.Oriented ℝ E (Fin (Module.finrank ℝ E))] :
     Orientation ℝ (TangentSpace I x) (Fin (Module.finrank ℝ E)) := by
-  simpa [TangentSpace] using
-    (positiveOrientation : Orientation ℝ E (Fin (Module.finrank ℝ E)))
+  simpa [TangentSpace] using (positiveOrientation : Orientation ℝ E (Fin (Module.finrank ℝ E)))
 
 end Tangent
 
