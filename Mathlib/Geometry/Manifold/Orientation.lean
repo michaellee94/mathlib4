@@ -146,15 +146,7 @@ def orientationPreservingPregroupoid : Pregroupoid H where
           (hfdet x (show x ∈ modelSet I u from ⟨hx.1.1, hx.2⟩))
       have hdet_g : 0 < jacobianDetWithin (I ∘ g ∘ I.symm) B ((I ∘ f ∘ I.symm) x) :=
         hgdet ((I ∘ f ∘ I.symm) x) (show (I ∘ f ∘ I.symm) x ∈ modelSet I v from hxB)
-      rw [jacobianDetWithin, hcomp]
-      rw [show
-        LinearMap.det
-            (↑((fderivWithin ℝ (I ∘ g ∘ I.symm) B ((I ∘ f ∘ I.symm) x)).comp
-              (fderivWithin ℝ (I ∘ f ∘ I.symm) A x)) : E →ₗ[ℝ] E) =
-          LinearMap.det
-            ((↑(fderivWithin ℝ (I ∘ g ∘ I.symm) B ((I ∘ f ∘ I.symm) x)) : E →ₗ[ℝ] E) ∘ₗ
-              (↑(fderivWithin ℝ (I ∘ f ∘ I.symm) A x) : E →ₗ[ℝ] E)) by simp]
-      rw [LinearMap.det_comp]
+      rw [jacobianDetWithin, hcomp, ContinuousLinearMap.coe_comp, LinearMap.det_comp]
       exact mul_pos hdet_g hdet_f
   id_mem := by
     refine ⟨?_, ?_⟩
