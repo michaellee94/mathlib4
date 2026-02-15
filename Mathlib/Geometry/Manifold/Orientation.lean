@@ -284,22 +284,21 @@ class OrientedManifold (M : Type*) [TopologicalSpace M] [ChartedSpace H M] [IsMa
 
 /-- An oriented manifold is orientable. -/
 instance (M : Type*) [TopologicalSpace M] [ChartedSpace H M] [IsManifold I 1 M]
-    [OrientedManifold I M] : Orientable I M :=
-  (OrientedManifold.manifoldOrientation (I := I) (M := M)).isOrientable
+    [OrientedManifold I M] : Orientable I M := OrientedManifold.manifoldOrientation.isOrientable
 
 /-- The chosen orientation on tangent spaces at interior points of an oriented manifold. -/
 abbrev orientedTangentOrientation (M : Type*) [TopologicalSpace M] [ChartedSpace H M]
     [IsManifold I 1 M] [OrientedManifold I M]
     (x : I.interiorOpens (M := M) one_ne_zero) :
     Orientation ℝ (TangentSpace I x) (Fin (Module.finrank ℝ E)) :=
-  (OrientedManifold.manifoldOrientation (I := I) (M := M)).tangentOrientation x
+  OrientedManifold.manifoldOrientation.tangentOrientation x
 
 /-- The canonical `0`-dimensional point manifold has exactly two interior manifold orientations. -/
 theorem point_has_two_manifoldOrientations :
-    ∃ oPos oNeg : ManifoldOrientation (I := (𝓘(ℝ, EuclideanSpace ℝ (Fin 0))))
+    ∃ oPos oNeg : ManifoldOrientation (𝓘(ℝ, EuclideanSpace ℝ (Fin 0)))
       (EuclideanSpace ℝ (Fin 0)),
       oPos ≠ oNeg ∧
-      ∀ o : ManifoldOrientation (I := (𝓘(ℝ, EuclideanSpace ℝ (Fin 0))))
+      ∀ o : ManifoldOrientation (𝓘(ℝ, EuclideanSpace ℝ (Fin 0)))
         (EuclideanSpace ℝ (Fin 0)), o = oPos ∨ o = oNeg := by
   let E0 := EuclideanSpace ℝ (Fin 0)
   let I0 : ModelWithCorners ℝ E0 E0 := 𝓘(ℝ, E0)
@@ -324,7 +323,7 @@ theorem point_has_two_manifoldOrientations :
   let x0 : I0.interiorOpens (M := E0) one_ne_zero := by
     refine ⟨0, ?_⟩
     simp [ModelWithCorners.interior_eq_univ]
-  have hExt : ∀ {o₁ o₂ : ManifoldOrientation (I := I0) E0},
+  have hExt : ∀ {o₁ o₂ : ManifoldOrientation I0 E0},
       o₁.tangentOrientation = o₂.tangentOrientation → o₁ = o₂ := by
     rintro ⟨_, _⟩ ⟨_, _⟩ rfl
     rfl
